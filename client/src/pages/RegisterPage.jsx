@@ -1,20 +1,43 @@
 import React, { useState } from 'react';
 import { Form, Button, Container, Row, Col, Card } from 'react-bootstrap';
+import axios from 'axios';
 
 const RegisterPage = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+    setSuccess('');
     if (password !== confirmPassword) {
-      alert('Passwords do not match!');
+      setError('Passwords do not match!');
       return;
     }
-    // Add registration logic here (e.g., send to backend)
-    alert('Account created!');
+    setLoading(true);
+    try {
+      const res = await axios.post('http://localhost:5000/api/register', {
+        name,
+        email,
+        password,
+      });
+      setSuccess(res.data.message);
+      setName('');
+      setEmail('');
+      setPassword('');
+      setConfirmPassword('');
+    } catch (err) {
+      setError(
+        err.response?.data?.message || 'Registration failed. Please try again.'
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -24,6 +47,8 @@ const RegisterPage = () => {
           <Card className="shadow">
             <Card.Body>
               <h2 className="mb-4 text-center">Create Account</h2>
+              {error && <div className="alert alert-danger">{error}</div>}
+              {success && <div className="alert alert-success">{success}</div>}
               <Form onSubmit={handleSubmit}>
                 <Form.Group className="mb-3" controlId="formBasicName">
                   <Form.Label>Name</Form.Label>
@@ -65,8 +90,8 @@ const RegisterPage = () => {
                     required
                   />
                 </Form.Group>
-                <Button variant="success" type="submit" className="w-100">
-                  Create Account
+                <Button variant="success" type="submit" className="w-100" disabled={loading}>
+                  {loading ? 'Creating Account...' : 'Create Account'}
                 </Button>
               </Form>
             </Card.Body>
