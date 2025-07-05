@@ -3,7 +3,7 @@ import { Container, Navbar, Nav, NavDropdown } from 'react-bootstrap';
 import { LinkContainer } from 'react-router-bootstrap';
 import { FaUniversity, FaShoppingCart, FaUser } from 'react-icons/fa';
 
-const Navbar = () => {
+const AppNavbar = () => {
   return (
     <Navbar bg="primary" variant="dark" expand="lg" sticky="top">
       <Container>
@@ -40,4 +40,4 @@ const Navbar = () => {
   );
 };
 
-export default Navbar;
+export default AppNavbar;
