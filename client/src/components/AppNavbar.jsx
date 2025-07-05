@@ -1,38 +1,28 @@
 import React from 'react';
-import { Container, Navbar, Nav, NavDropdown } from 'react-bootstrap';
-import { LinkContainer } from 'react-router-bootstrap';
-import { FaUniversity, FaShoppingCart, FaUser } from 'react-icons/fa';
+import { Container, Navbar, Nav } from 'react-bootstrap';
+import { Link } from 'react-router-dom';
+import { FaUniversity, FaUser } from 'react-icons/fa';
 
 const AppNavbar = () => {
   return (
     <Navbar bg="primary" variant="dark" expand="lg" sticky="top">
       <Container>
-        <LinkContainer to="/">
-          <Navbar.Brand>
-            <FaUniversity className="me-2" />
-            Campus Marketplace
-          </Navbar.Brand>
-        </LinkContainer>
+        <Navbar.Brand as={Link} to="/">
+          <FaUniversity className="me-2" />
+          Campus Marketplace
+        </Navbar.Brand>
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="me-auto">
-            <LinkContainer to="/marketplace">
-              <Nav.Link>Marketplace</Nav.Link>
-            </LinkContainer>
-            <LinkContainer to="/study-groups">
-              <Nav.Link>Study Groups</Nav.Link>
-            </LinkContainer>
+            <Nav.Link as={Link} to="/marketplace">Marketplace</Nav.Link>
+            <Nav.Link as={Link} to="/study-groups">Study Groups</Nav.Link>
           </Nav>
           <Nav>
-            <LinkContainer to="/dashboard">
-              <Nav.Link>
-                <FaUser className="me-1" />
-                My Account
-              </Nav.Link>
-            </LinkContainer>
-            <LinkContainer to="/login">
-              <Nav.Link>Login</Nav.Link>
-            </LinkContainer>
+            <Nav.Link as={Link} to="/dashboard">
+              <FaUser className="me-1" />
+              My Account
+            </Nav.Link>
+            <Nav.Link as={Link} to="/login">Login</Nav.Link>
           </Nav>
         </Navbar.Collapse>
       </Container>
