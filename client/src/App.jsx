@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import AppNavbar from './components/AppNavbar';
 import HomePage from './pages/HomePage';
-// import LoginPage from './pages/LoginPage';
+import LoginPage from './pages/LoginPage';
 // import RegisterPage from './pages/RegisterPage';
 // import MarketplacePage from './pages/MarketplacePage';
 // import ItemDetailPage from './pages/ItemDetailPage';
@@ -21,8 +21,8 @@ function App() {
         <div className="content-wrap">
           <Routes>
             <Route path="/" element={<HomePage />} />
-            {/* <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            {/* <Route path="/register" element={<RegisterPage />} />
             <Route path="/marketplace" element={<MarketplacePage />} />
             <Route path="/items/:id" element={<ItemDetailPage />} />
             <Route path="/post-item" element={<PostItemPage />} />
