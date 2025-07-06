@@ -55,6 +55,11 @@ app.post('/api/register', async (req, res) => {
     
     // Find university by domain
     console.log('[DEBUG] Searching for university with domain:', emailDomain);
+    
+    // Debug: Show all universities in database
+    const allUniversities = await pool.query('SELECT * FROM universities');
+    console.log('[DEBUG] All universities in database:', allUniversities.rows);
+    
     const uniResult = await pool.query('SELECT id FROM universities WHERE domain = $1', [emailDomain]);
     console.log('[DEBUG] University query result:', uniResult.rows);
     
