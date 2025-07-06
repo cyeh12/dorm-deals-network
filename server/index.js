@@ -58,6 +58,16 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
+app.get('/api/universities', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM universities');
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
 // Barebones route to serve a simple HTML page
 app.get('/', (req, res) => {
   res.send(`
