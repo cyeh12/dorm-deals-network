@@ -175,17 +175,19 @@ app.post('/api/items', async (req, res) => {
     return res.status(400).json({ message: 'All required fields must be provided.' });
   }
   
+  let finalContactInfo;
+  
   try {
     // Verify user exists
     console.log('[DEBUG] Verifying user exists:', user_id);
-    const userCheck = await pool.query('SELECT id, name FROM users WHERE id = $1', [user_id]);
+    const userCheck = await pool.query('SELECT id, name, email FROM users WHERE id = $1', [user_id]);
     if (userCheck.rows.length === 0) {
       console.log('[DEBUG] User not found');
       return res.status(404).json({ message: 'User not found.' });
     }
     
     // Set default contact info to user's email if not provided
-    const finalContactInfo = contact_method === 'email' ? userCheck.rows[0].email : contact_info;
+    finalContactInfo = contact_method === 'email' ? userCheck.rows[0].email : contact_info;
     
     console.log('[DEBUG] Inserting new item...');
     const result = await pool.query(
@@ -194,7 +196,7 @@ app.post('/api/items', async (req, res) => {
        RETURNING *`,
       [title, description, category, price, condition, contact_method, finalContactInfo, user_id]
     );
-    
+  
     console.log('[DEBUG] Item inserted successfully:', result.rows[0].id);
     
     res.status(201).json({
