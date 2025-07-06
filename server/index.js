@@ -2,12 +2,16 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const bodyParser = require('body-parser');
 const cors = require('cors');
+const { Pool } = require('pg');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// In-memory user store for demo (replace with DB in production)
-const users = [];
+// PostgreSQL connection
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+});
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -17,13 +21,24 @@ app.post('/api/register', async (req, res) => {
   if (!name || !email || !password) {
     return res.status(400).json({ message: 'All fields are required.' });
   }
-  const existingUser = users.find((u) => u.email === email);
-  if (existingUser) {
-    return res.status(409).json({ message: 'User already exists.' });
+  try {
+    // Check if user exists
+    const userCheck = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
+    if (userCheck.rows.length > 0) {
+      return res.status(409).json({ message: 'User already exists.' });
+    }
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+    // Insert user
+    await pool.query(
+      'INSERT INTO users (name, email, password) VALUES ($1, $2, $3)',
+      [name, email, hashedPassword]
+    );
+    res.status(201).json({ message: 'User registered successfully.' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error.' });
   }
-  const hashedPassword = await bcrypt.hash(password, 10);
-  users.push({ name, email, password: hashedPassword });
-  res.status(201).json({ message: 'User registered successfully.' });
 });
 
 app.listen(PORT, () => {
