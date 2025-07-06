@@ -37,5 +37,3 @@ A buy/sell platform exclusively for university students to trade textbooks, dorm
    ```bash
    git clone https://github.com/your-username/college-student-marketplace.git
    cd college-student-marketplace
-
-Dummy change to Readme
