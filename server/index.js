@@ -22,6 +22,18 @@ app.post('/api/register', async (req, res) => {
     return res.status(400).json({ message: 'All fields are required.' });
   }
   try {
+    // Extract domain from email
+    const emailDomain = email.split('@')[1];
+    if (!emailDomain) {
+      return res.status(400).json({ message: 'Invalid email format.' });
+    }
+    // Find university by domain
+    const uniResult = await pool.query('SELECT id FROM universities WHERE domain = $1', [emailDomain]);
+    if (uniResult.rows.length === 0) {
+      return res.status(400).json({ message: 'No university found for this email domain.' });
+    }
+    const university_id = uniResult.rows[0].id;
+
     // Check if user exists
     const userCheck = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
     if (userCheck.rows.length > 0) {
@@ -29,10 +41,10 @@ app.post('/api/register', async (req, res) => {
     }
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
-    // Insert user
+    // Insert user with university_id
     await pool.query(
-      'INSERT INTO users (name, email, password) VALUES ($1, $2, $3)',
-      [name, email, hashedPassword]
+      'INSERT INTO users (name, email, password, university_id) VALUES ($1, $2, $3, $4)',
+      [name, email, hashedPassword, university_id]
     );
     res.status(201).json({ message: 'User registered successfully.' });
   } catch (err) {
