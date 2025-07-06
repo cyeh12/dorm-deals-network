@@ -20,12 +20,6 @@ app.use(bodyParser.json());
 // Serve static files from the React app
 app.use(express.static(path.join(__dirname, 'client/dist')));
 
-// Catch-all route for React Router (client-side routing)
-app.get(/.*/, (req, res) => {
-  const indexPath = path.join(__dirname, 'client/dist', 'index.html');
-  res.sendFile(indexPath);
-});
-
 // API route: Register user
 app.post('/api/register', async (req, res) => {
   const { name, email, password } = req.body;
@@ -73,6 +67,12 @@ app.get('/api/universities', async (req, res) => {
     console.error(err);
     res.status(500).json({ message: err.message || 'Server error.' });
   }
+});
+
+// Catch-all route for React Router (client-side routing)
+app.get(/.*/, (req, res) => {
+  const indexPath = path.join(__dirname, 'client/dist', 'index.html');
+  res.sendFile(indexPath);
 });
 
 app.listen(PORT, () => {
