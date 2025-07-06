@@ -315,6 +315,42 @@ app.get('/api/universities', async (req, res) => {
   }
 });
 
+// API route: Delete item
+app.delete('/api/items/:itemId', async (req, res) => {
+  console.log('[DEBUG] Delete item request received');
+  const { itemId } = req.params;
+  
+  try {
+    console.log('[DEBUG] Deleting item:', itemId);
+    
+    // Check if item exists and get user_id for authorization
+    const itemCheck = await pool.query('SELECT user_id FROM items WHERE id = $1', [itemId]);
+    if (itemCheck.rows.length === 0) {
+      console.log('[DEBUG] Item not found');
+      return res.status(404).json({ message: 'Item not found.' });
+    }
+    
+    // Delete the item
+    const result = await pool.query('DELETE FROM items WHERE id = $1 RETURNING *', [itemId]);
+    
+    if (result.rows.length === 0) {
+      console.log('[DEBUG] Failed to delete item');
+      return res.status(500).json({ message: 'Failed to delete item.' });
+    }
+    
+    console.log('[DEBUG] Item deleted successfully:', itemId);
+    res.json({ message: 'Item deleted successfully', item: result.rows[0] });
+  } catch (err) {
+    console.error('[DEBUG] Delete item error:', err);
+    if (err.message.includes('relation "items" does not exist')) {
+      console.log('[DEBUG] Items table does not exist');
+      res.status(404).json({ message: 'Item not found.' });
+    } else {
+      res.status(500).json({ message: 'Server error.' });
+    }
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
