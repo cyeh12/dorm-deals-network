@@ -61,7 +61,7 @@ app.post('/api/register', async (req, res) => {
     res.status(201).json({ message: 'User registered successfully.' });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: 'Server error.' });
+    res.status(500).json({ message: err.message || 'Server error.' });
   }
 });
 
@@ -71,7 +71,7 @@ app.get('/api/universities', async (req, res) => {
     res.json(result.rows);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: 'Server error.' });
+    res.status(500).json({ message: err.message || 'Server error.' });
   }
 });
 
