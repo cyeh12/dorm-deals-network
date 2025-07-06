@@ -23,6 +23,11 @@ app.use(express.static(path.join(__dirname, '../client/dist')));
 app.get("/", (req, res) => {
   const indexPath = path.join(__dirname, '../client/dist', 'index.html');
   console.log(`Serving index file from: ${indexPath}`);
+  if (fs.existsSync(indexPath)) {
+    console.log('index.html exists!');
+  } else {
+    console.log('index.html does NOT exist!');
+  }
   res.sendFile(indexPath);
 });
 
