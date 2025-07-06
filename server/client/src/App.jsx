@@ -5,6 +5,8 @@ import AppNavbar from './components/AppNavbar';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import DashboardPage from './pages/DashboardPage';
+import ComingSoonPage from './pages/ComingSoonPage';
 // import MarketplacePage from './pages/MarketplacePage';
 // import ItemDetailPage from './pages/ItemDetailPage';
 // import PostItemPage from './pages/PostItemPage';
@@ -23,6 +25,13 @@ function App() {
             <Route path="/" element={<HomePage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/post-item" element={<ComingSoonPage feature="Post Item" />} />
+            <Route path="/browse" element={<ComingSoonPage feature="Browse Items" />} />
+            <Route path="/messages" element={<ComingSoonPage feature="Messages" />} />
+            <Route path="/my-listings" element={<ComingSoonPage feature="My Listings" />} />
+            <Route path="/marketplace" element={<ComingSoonPage feature="Marketplace" />} />
+            <Route path="/study-groups" element={<ComingSoonPage feature="Study Groups" />} />
             {/* <Route path="/marketplace" element={<MarketplacePage />} /> */}
             {/* <Route path="/items/:id" element={<ItemDetailPage />} /> */}
             {/* <Route path="/post-item" element={<PostItemPage />} /> */}

@@ -1,9 +1,17 @@
 import React from 'react';
-import { Container, Navbar, Nav } from 'react-bootstrap';
-import { Link } from 'react-router-dom';
-import { FaUniversity, FaUser } from 'react-icons/fa';
+import { Container, Navbar, Nav, Button } from 'react-bootstrap';
+import { Link, useNavigate } from 'react-router-dom';
+import { FaUniversity, FaUser, FaSignOutAlt } from 'react-icons/fa';
 
 const AppNavbar = () => {
+  const navigate = useNavigate();
+  const user = JSON.parse(localStorage.getItem('user') || 'null');
+
+  const handleLogout = () => {
+    localStorage.removeItem('user');
+    navigate('/');
+  };
+
   return (
     <Navbar bg="primary" variant="dark" expand="lg" sticky="top">
       <Container>
@@ -18,11 +26,20 @@ const AppNavbar = () => {
             <Nav.Link as={Link} to="/study-groups">Study Groups</Nav.Link>
           </Nav>
           <Nav>
-            <Nav.Link as={Link} to="/dashboard">
-              <FaUser className="me-1" />
-              My Account
-            </Nav.Link>
-            <Nav.Link as={Link} to="/login">Login</Nav.Link>
+            {user ? (
+              <>
+                <Nav.Link as={Link} to="/dashboard">
+                  <FaUser className="me-1" />
+                  Welcome, {user.name}
+                </Nav.Link>
+                <Button variant="outline-light" size="sm" onClick={handleLogout} className="ms-2">
+                  <FaSignOutAlt className="me-1" />
+                  Logout
+                </Button>
+              </>
+            ) : (
+              <Nav.Link as={Link} to="/login">Login</Nav.Link>
+            )}
           </Nav>
         </Navbar.Collapse>
       </Container>
