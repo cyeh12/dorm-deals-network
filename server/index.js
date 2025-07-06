@@ -21,7 +21,9 @@ app.use(express.static(path.join(__dirname, '../client/dist')));
 
 // Catch-all route for React Router (client-side routing)
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, '../client/dist', 'index.html'));
+  const indexPath = path.join(__dirname, '../client/dist', 'index.html');
+  console.log(`Serving index file from: ${indexPath}`);
+  res.sendFile(indexPath);
 });
 
 // API route: Register user
