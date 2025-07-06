@@ -10,7 +10,7 @@ import RegisterPage from './pages/RegisterPage';
 // import PostItemPage from './pages/PostItemPage';
 // import StudyGroupsPage from './pages/StudyGroupsPage';
 // import UserDashboardPage from './pages/UserDashboardPage';
-// import Footer from './components/Footer';
+import Footer from './components/Footer';
 import './App.css';
 
 function App() {
@@ -30,7 +30,7 @@ function App() {
             {/* <Route path="/dashboard" element={<UserDashboardPage />} /> */}
           </Routes>
         </div>
-        {/* <Footer /> */}
+        <Footer />
         <ToastContainer position="bottom-right" />
       </div>
     </Router>
