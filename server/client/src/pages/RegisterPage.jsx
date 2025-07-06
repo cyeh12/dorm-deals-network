@@ -13,6 +13,7 @@ const RegisterPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log('[DEBUG] Form submitted');
     setError('');
     setSuccess('');
     if (password !== confirmPassword) {
@@ -25,28 +26,38 @@ const RegisterPage = () => {
     }
     setLoading(true);
     try {
-      console.log('[DEVELOPER] process.env.NODE_ENV: ' + process.env.NODE_ENV);
-      const res = await axios.post(
+      console.log('[DEBUG] NODE_ENV:', process.env.NODE_ENV);
+      console.log('[DEBUG] Sending registration data:', { name, email, password: '***' });
+
+      const apiUrl =
         process.env.NODE_ENV === 'production'
           ? 'https://college-student-marketplace-039076a3e43e.herokuapp.com/api/register'
-          : 'http://localhost:5000/api/register',
-        {
-          name,
-          email,
-          password,
-        }
-      );
+          : 'http://localhost:5000/api/register';
+
+      console.log('[DEBUG] API URL:', apiUrl);
+
+      const res = await axios.post(apiUrl, {
+        name,
+        email,
+        password,
+      });
+
+      console.log('[DEBUG] Registration successful:', res.data);
       setSuccess(res.data.message);
       setName('');
       setEmail('');
       setPassword('');
       setConfirmPassword('');
     } catch (err) {
+      console.error('[DEBUG] Registration error:', err);
+      console.error('[DEBUG] Error response:', err.response?.data);
+      console.error('[DEBUG] Error status:', err.response?.status);
       setError(
         err.response?.data?.message || 'Registration failed. Please try again.'
       );
     } finally {
       setLoading(false);
+      console.log('[DEBUG] Registration attempt completed');
     }
   };
 
