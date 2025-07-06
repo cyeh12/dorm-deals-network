@@ -21,7 +21,7 @@ app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'client/dist')));
 
 // Catch-all route for React Router (client-side routing)
-app.get("*", (req, res) => {
+app.get('/*', (req, res) => {
   const indexPath = path.join(__dirname, 'client/dist', 'index.html');
   res.sendFile(indexPath);
 });
