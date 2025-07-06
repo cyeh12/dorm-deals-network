@@ -21,14 +21,8 @@ app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'client/dist')));
 
 // Catch-all route for React Router (client-side routing)
-app.get("/", (req, res) => {
+app.get("*", (req, res) => {
   const indexPath = path.join(__dirname, 'client/dist', 'index.html');
-  console.log(`Serving index file from: ${indexPath}`);
-  if (fs.existsSync(indexPath)) {
-    console.log('index.html exists!');
-  } else {
-    console.log('index.html does NOT exist!');
-  }
   res.sendFile(indexPath);
 });
 
