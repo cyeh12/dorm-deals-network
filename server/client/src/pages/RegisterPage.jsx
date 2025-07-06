@@ -25,9 +25,10 @@ const RegisterPage = () => {
     }
     setLoading(true);
     try {
+      console.log('[DEVELOPER] process.env.NODE_ENV: ' + process.env.NODE_ENV);
       const res = await axios.post(
         process.env.NODE_ENV === 'production'
-          ? 'https://college-student-marketplace-039076a3e43e.herokuapp.com//api/register'
+          ? 'https://college-student-marketplace-039076a3e43e.herokuapp.com/api/register'
           : 'http://localhost:5000/api/register',
         {
           name,
