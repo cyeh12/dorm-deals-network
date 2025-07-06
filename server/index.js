@@ -19,6 +19,11 @@ app.use(bodyParser.json());
 // Serve static files from the React app
 app.use(express.static(path.join(__dirname, '../client/dist')));
 
+// Catch-all route for React Router (client-side routing)
+app.get(/(.*)/, (req, res) => {
+  res.sendFile(path.join(__dirname, '../client/dist', 'index.html'));
+});
+
 // API route: Register user
 app.post('/api/register', async (req, res) => {
   const { name, email, password } = req.body;
@@ -66,24 +71,6 @@ app.get('/api/universities', async (req, res) => {
     console.error(err);
     res.status(500).json({ message: 'Server error.' });
   }
-});
-
-// Barebones route to serve a simple HTML page
-app.get('/', (req, res) => {
-  res.send(`
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Test Page</title>
-    </head>
-    <body>
-      <h1>Hello from Express!</h1>
-      <p>If you see this, your server is working.</p>
-    </body>
-    </html>
-  `);
 });
 
 app.listen(PORT, () => {
