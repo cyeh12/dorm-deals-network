@@ -15,16 +15,22 @@ const pool = new Pool({
 
 // Add middleware
 app.use(cors());
-app.options('*', cors()); // Explicitly handle CORS preflight requests
 app.use(bodyParser.json());
-
-// Health check endpoint (optional, for Heroku monitoring)
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok' });
-});
 
 // Serve static files from the React app
 app.use(express.static(path.join(__dirname, 'client/dist')));
+
+// Catch-all route for React Router (client-side routing)
+app.get("/", (req, res) => {
+  const indexPath = path.join(__dirname, 'client/dist', 'index.html');
+  console.log(`Serving index file from: ${indexPath}`);
+  if (fs.existsSync(indexPath)) {
+    console.log('index.html exists!');
+  } else {
+    console.log('index.html does NOT exist!');
+  }
+  res.sendFile(indexPath);
+});
 
 // API route: Register user
 app.post('/api/register', async (req, res) => {
@@ -61,30 +67,18 @@ app.post('/api/register', async (req, res) => {
     res.status(201).json({ message: 'User registered successfully.' });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: err.message || 'Server error.' });
+    res.status(500).json({ message: 'Server error.' });
   }
 });
 
-// API route: List universities
 app.get('/api/universities', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM universities');
     res.json(result.rows);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: err.message || 'Server error.' });
+    res.status(500).json({ message: 'Server error.' });
   }
-});
-
-// API route: Root
-app.get('/', (req, res) => {
-  res.send('Welcome to the College Student Marketplace API!');
-});
-
-// Catch-all route for React Router (client-side routing)
-app.get('*', (req, res) => {
-  const indexPath = path.join(__dirname, 'client/dist', 'index.html');
-  res.sendFile(indexPath);
 });
 
 app.listen(PORT, () => {
