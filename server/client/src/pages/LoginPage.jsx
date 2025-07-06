@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
 import { Form, Button, Container, Row, Col, Card } from 'react-bootstrap';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
 const LoginPage = () => {
+  const location = useLocation();
+  const successMessage = location.state?.successMessage;
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
@@ -19,6 +22,11 @@ const LoginPage = () => {
           <Card className="shadow">
             <Card.Body>
               <h2 className="mb-4 text-center">Login</h2>
+              {successMessage && (
+                <div className="alert alert-success" role="alert">
+                  {successMessage}
+                </div>
+              )}
               <Form onSubmit={handleSubmit}>
                 <Form.Group className="mb-3" controlId="formBasicEmail">
                   <Form.Label>Email address</Form.Label>

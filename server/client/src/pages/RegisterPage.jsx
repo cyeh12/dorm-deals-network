@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { Form, Button, Container, Row, Col, Card } from 'react-bootstrap';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 const RegisterPage = () => {
+  const navigate = useNavigate();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -48,6 +50,11 @@ const RegisterPage = () => {
       setEmail('');
       setPassword('');
       setConfirmPassword('');
+
+      // Redirect to login page with success message
+      setTimeout(() => {
+        navigate('/login', { state: { successMessage: res.data.message } });
+      }, 2000); // Show success message for 2 seconds before redirecting
     } catch (err) {
       console.error('[DEBUG] Registration error:', err);
       console.error('[DEBUG] Error response:', err.response?.data);
