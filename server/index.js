@@ -3,6 +3,7 @@ const bcrypt = require('bcrypt');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const { Pool } = require('pg');
+const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -15,6 +16,7 @@ const pool = new Pool({
 
 app.use(cors());
 app.use(bodyParser.json());
+app.use(express.static(path.join(__dirname, '../client/dist'))); // or '../client/build' if using Create React App
 
 app.post('/api/register', async (req, res) => {
   const { name, email, password } = req.body;
@@ -51,6 +53,10 @@ app.post('/api/register', async (req, res) => {
     console.error(err);
     res.status(500).json({ message: 'Server error.' });
   }
+});
+
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../client/dist', 'index.html')); // or '../client/build'
 });
 
 app.listen(PORT, () => {
