@@ -315,6 +315,35 @@ app.get('/api/universities', async (req, res) => {
   }
 });
 
+// API route: Get all students info
+app.get('/api/students', async (req, res) => {
+  console.log('[DEBUG] Get all students request received');
+  
+  try {
+    const result = await pool.query(`
+      SELECT 
+        u.id,
+        u.name,
+        u.email,
+        u.created_at,
+        uni.name as university_name,
+        uni.domain as university_domain
+      FROM users u
+      LEFT JOIN universities uni ON u.university_id = uni.id
+      ORDER BY u.created_at DESC
+    `);
+    
+    console.log('[DEBUG] Students retrieved:', result.rows.length);
+    res.json({
+      total_students: result.rows.length,
+      students: result.rows
+    });
+  } catch (err) {
+    console.error('[DEBUG] Error fetching students:', err);
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
 // API route: Delete item
 app.delete('/api/items/:itemId', async (req, res) => {
   console.log('[DEBUG] Delete item request received');
