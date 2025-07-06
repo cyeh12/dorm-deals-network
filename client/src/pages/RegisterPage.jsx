@@ -25,11 +25,16 @@ const RegisterPage = () => {
     }
     setLoading(true);
     try {
-      const res = await axios.post('http://localhost:5000/api/register', {
-        name,
-        email,
-        password,
-      });
+      const res = await axios.post(
+        process.env.NODE_ENV === 'production'
+          ? 'https://college-student-marketplace.herokuapp.com/api/register'
+          : 'http://localhost:5000/api/register',
+        {
+          name,
+          email,
+          password,
+        }
+      );
       setSuccess(res.data.message);
       setName('');
       setEmail('');
