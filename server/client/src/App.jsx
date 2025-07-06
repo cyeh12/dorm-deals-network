@@ -9,6 +9,7 @@ import DashboardPage from './pages/DashboardPage';
 import ComingSoonPage from './pages/ComingSoonPage';
 import PostItemPage from './pages/PostItemPage';
 import MyListingsPage from './pages/MyListingsPage';
+import EditItemPage from './pages/EditItemPage';
 // import MarketplacePage from './pages/MarketplacePage';
 // import ItemDetailPage from './pages/ItemDetailPage';
 // import StudyGroupsPage from './pages/StudyGroupsPage';
@@ -31,6 +32,7 @@ function App() {
             <Route path="/browse" element={<ComingSoonPage feature="Browse Items" />} />
             <Route path="/messages" element={<ComingSoonPage feature="Messages" />} />
             <Route path="/my-listings" element={<MyListingsPage />} />
+            <Route path="/edit-item/:itemId" element={<EditItemPage />} />
             <Route path="/marketplace" element={<ComingSoonPage feature="Marketplace" />} />
             <Route path="/study-groups" element={<ComingSoonPage feature="Study Groups" />} />
             {/* <Route path="/marketplace" element={<MarketplacePage />} /> */}
