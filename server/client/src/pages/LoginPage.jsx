@@ -1,18 +1,49 @@
 import React, { useState } from 'react';
 import { Form, Button, Container, Row, Col, Card } from 'react-bootstrap';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 const LoginPage = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const successMessage = location.state?.successMessage;
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Add login logic here
-    alert('Login submitted!');
+    setError('');
+    setLoading(true);
+
+    try {
+      console.log('[DEBUG] Login attempt for:', email);
+
+      const apiUrl =
+        process.env.NODE_ENV === 'production'
+          ? 'https://college-student-marketplace-039076a3e43e.herokuapp.com/api/login'
+          : 'http://localhost:5000/api/login';
+
+      const res = await axios.post(apiUrl, {
+        email,
+        password,
+      });
+
+      console.log('[DEBUG] Login successful:', res.data);
+
+      // Store user data in localStorage (simple auth)
+      localStorage.setItem('user', JSON.stringify(res.data.user));
+
+      // Redirect to dashboard
+      navigate('/dashboard');
+    } catch (err) {
+      console.error('[DEBUG] Login error:', err);
+      setError(err.response?.data?.message || 'Login failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -25,6 +56,11 @@ const LoginPage = () => {
               {successMessage && (
                 <div className="alert alert-success" role="alert">
                   {successMessage}
+                </div>
+              )}
+              {error && (
+                <div className="alert alert-danger" role="alert">
+                  {error}
                 </div>
               )}
               <Form onSubmit={handleSubmit}>
@@ -48,8 +84,13 @@ const LoginPage = () => {
                     required
                   />
                 </Form.Group>
-                <Button variant="primary" type="submit" className="w-100">
-                  Login
+                <Button
+                  variant="primary"
+                  type="submit"
+                  className="w-100"
+                  disabled={loading}
+                >
+                  {loading ? 'Logging in...' : 'Login'}
                 </Button>
                 <div className="text-center mt-3">
                   <span>Don't have an account? </span>

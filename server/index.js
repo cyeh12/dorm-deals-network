@@ -103,6 +103,66 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
+// API route: Login user
+app.post('/api/login', async (req, res) => {
+  console.log('[DEBUG] Login request received');
+  console.log('[DEBUG] Request body:', { ...req.body, password: '***' });
+  
+  const { email, password } = req.body;
+  if (!email || !password) {
+    console.log('[DEBUG] Missing required fields');
+    return res.status(400).json({ message: 'Email and password are required.' });
+  }
+  
+  try {
+    // Find user by email
+    console.log('[DEBUG] Searching for user with email:', email);
+    const userResult = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+    console.log('[DEBUG] User query result:', userResult.rows.length > 0 ? 'User found' : 'User not found');
+    
+    if (userResult.rows.length === 0) {
+      console.log('[DEBUG] Invalid credentials - user not found');
+      return res.status(401).json({ message: 'Invalid email or password.' });
+    }
+    
+    const user = userResult.rows[0];
+    
+    // Check password
+    console.log('[DEBUG] Verifying password...');
+    const bcrypt = require('bcrypt');
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    console.log('[DEBUG] Password verification result:', isValidPassword ? 'Valid' : 'Invalid');
+    
+    if (!isValidPassword) {
+      console.log('[DEBUG] Invalid credentials - wrong password');
+      return res.status(401).json({ message: 'Invalid email or password.' });
+    }
+    
+    // Get university info
+    console.log('[DEBUG] Fetching university info for user...');
+    const uniResult = await pool.query('SELECT name FROM universities WHERE id = $1', [user.university_id]);
+    const universityName = uniResult.rows.length > 0 ? uniResult.rows[0].name : 'Unknown University';
+    
+    console.log('[DEBUG] Login successful for user:', user.name);
+    
+    // Return user data (excluding password)
+    res.status(200).json({
+      message: 'Login successful',
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        university: universityName,
+        university_id: user.university_id
+      }
+    });
+  } catch (err) {
+    console.error('[DEBUG] Login error:', err);
+    console.error('[DEBUG] Error message:', err.message);
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
 app.get('/api/universities', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM universities');
