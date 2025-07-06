@@ -18,11 +18,11 @@ app.use(cors());
 app.use(bodyParser.json());
 
 // Serve static files from the React app
-app.use(express.static(path.join(__dirname, '../client/dist')));
+app.use(express.static(path.join(__dirname, 'client/dist')));
 
 // Catch-all route for React Router (client-side routing)
 app.get("/", (req, res) => {
-  const indexPath = path.join(__dirname, '../client/dist', 'index.html');
+  const indexPath = path.join(__dirname, 'client/dist', 'index.html');
   console.log(`Serving index file from: ${indexPath}`);
   if (fs.existsSync(indexPath)) {
     console.log('index.html exists!');
