@@ -76,8 +76,13 @@ app.get('/api/universities', async (req, res) => {
   }
 });
 
+// API route: Root
+app.get('/', (req, res) => {
+  res.send('Welcome to the College Student Marketplace API!');
+});
+
 // Catch-all route for React Router (client-side routing)
-app.get(/.*/, (req, res) => {
+app.get('*', (req, res) => {
   const indexPath = path.join(__dirname, 'client/dist', 'index.html');
   res.sendFile(indexPath);
 });
