@@ -77,7 +77,7 @@ app.get('/api/universities', async (req, res) => {
 });
 
 // Catch-all route for React Router (client-side routing)
-app.get(/.*/, (req, res) => {
+app.get('*', (req, res) => {
   const indexPath = path.join(__dirname, 'client/dist', 'index.html');
   res.sendFile(indexPath);
 });
