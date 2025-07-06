@@ -15,7 +15,13 @@ const pool = new Pool({
 
 // Add middleware
 app.use(cors());
+app.options('*', cors()); // Explicitly handle CORS preflight requests
 app.use(bodyParser.json());
+
+// Health check endpoint (optional, for Heroku monitoring)
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok' });
+});
 
 // Serve static files from the React app
 app.use(express.static(path.join(__dirname, 'client/dist')));
@@ -59,6 +65,7 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
+// API route: List universities
 app.get('/api/universities', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM universities');
