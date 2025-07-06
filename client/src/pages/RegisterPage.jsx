@@ -19,6 +19,10 @@ const RegisterPage = () => {
       setError('Passwords do not match!');
       return;
     }
+    if (!/^[^@\s]+@[^@\s]+\.edu$/.test(email)) {
+      setError('Please use a valid .edu student email address!');
+      return;
+    }
     setLoading(true);
     try {
       const res = await axios.post('http://localhost:5000/api/register', {
