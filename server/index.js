@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 const bodyParser = require('body-parser');
 const cors = require('cors');
+const fs = require('fs');
 const { Pool } = require('pg');
 const app = express();
 const PORT = process.env.PORT || 5000;
