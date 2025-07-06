@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Form, Button, Container, Row, Col, Card } from 'react-bootstrap';
+import { Link } from 'react-router-dom';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -44,7 +45,7 @@ const LoginPage = () => {
                 </Button>
                 <div className="text-center mt-3">
                   <span>Don't have an account? </span>
-                  <a href="/register">Create one</a>
+                  <Link to="/register">Create one</Link>
                 </div>
               </Form>
             </Card.Body>
