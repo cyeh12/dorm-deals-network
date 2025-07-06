@@ -5,6 +5,7 @@
   "type": "commonjs",
   "scripts": {
     "start": "node index.js",
+    "build": "echo \"no-op\"",
     "heroku-postbuild": "cd ../client && npm install && npm run build"
   },
   "dependencies": {
