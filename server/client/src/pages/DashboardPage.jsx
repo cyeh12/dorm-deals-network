@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Button, Badge, ListGroup } from 'react-bootstrap';
+import { Container, Row, Col, Card, Button, Badge, ListGroup, Spinner } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
+import axios from 'axios';
 
 const DashboardPage = () => {
   const [user, setUser] = useState(null);
+  const [userItems, setUserItems] = useState([]);
+  const [recentItems, setRecentItems] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     activeListings: 0,
     newMessages: 0,
@@ -15,20 +19,49 @@ const DashboardPage = () => {
     // Get user data from localStorage
     const userData = localStorage.getItem('user');
     if (userData) {
-      setUser(JSON.parse(userData));
+      const parsedUser = JSON.parse(userData);
+      setUser(parsedUser);
+      fetchUserData(parsedUser.id);
     } else {
       // Redirect to login if no user data
       window.location.href = '/login';
     }
-    
-    // TODO: Replace with actual stats from API
-    setStats({
-      activeListings: 3,
-      newMessages: 2,
-      savedItems: 5,
-      totalViews: 47
-    });
   }, []);
+
+  const fetchUserData = async (userId) => {
+    try {
+      const apiUrl = process.env.NODE_ENV === 'production'
+        ? 'https://college-student-marketplace-039076a3e43e.herokuapp.com'
+        : 'http://localhost:5000';
+
+      // Fetch user's items
+      const userItemsRes = await axios.get(`${apiUrl}/api/users/${userId}/items`);
+      setUserItems(userItemsRes.data);
+
+      // Fetch recent items from the marketplace
+      const allItemsRes = await axios.get(`${apiUrl}/api/items`);
+      setRecentItems(allItemsRes.data.slice(0, 4)); // Get first 4 items
+
+      // Update stats
+      setStats(prevStats => ({
+        ...prevStats,
+        activeListings: userItemsRes.data.filter(item => item.status === 'active').length
+      }));
+
+    } catch (err) {
+      console.error('Error fetching user data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <Container className="d-flex justify-content-center align-items-center min-vh-100">
+        <Spinner animation="border" />
+      </Container>
+    );
+  }
 
   if (!user) {
     return (
@@ -115,20 +148,25 @@ const DashboardPage = () => {
               </Button>
             </Card.Header>
             <Card.Body>
-              {stats.activeListings > 0 ? (
+              {loading ? (
+                <div className="text-center">
+                  <Spinner animation="border" size="sm" />
+                  <span className="ms-2">Loading...</span>
+                </div>
+              ) : userItems.length > 0 ? (
                 <ListGroup variant="flush">
-                  <ListGroup.Item className="d-flex justify-content-between align-items-center">
-                    📚 Calculus Textbook
-                    <Badge bg="success">Active</Badge>
-                  </ListGroup.Item>
-                  <ListGroup.Item className="d-flex justify-content-between align-items-center">
-                    💻 MacBook Pro 2019
-                    <Badge bg="success">Active</Badge>
-                  </ListGroup.Item>
-                  <ListGroup.Item className="d-flex justify-content-between align-items-center">
-                    🪑 Desk Chair
-                    <Badge bg="warning">Pending</Badge>
-                  </ListGroup.Item>
+                  {userItems.slice(0, 3).map((item, index) => (
+                    <ListGroup.Item key={item.id} className="d-flex justify-content-between align-items-center">
+                      <div>
+                        <strong>{item.title}</strong>
+                        <br />
+                        <small className="text-muted">${item.price}</small>
+                      </div>
+                      <Badge bg={item.status === 'active' ? 'success' : 'warning'}>
+                        {item.status === 'active' ? 'Active' : 'Pending'}
+                      </Badge>
+                    </ListGroup.Item>
+                  ))}
                 </ListGroup>
               ) : (
                 <p className="text-muted mb-0">No active listings. <Link to="/post-item">Post your first item!</Link></p>
@@ -147,24 +185,29 @@ const DashboardPage = () => {
               </Button>
             </Card.Header>
             <Card.Body>
-              <ListGroup variant="flush">
-                <ListGroup.Item className="d-flex justify-content-between align-items-center">
-                  🎮 PlayStation 5
-                  <small className="text-muted">2 hours ago</small>
-                </ListGroup.Item>
-                <ListGroup.Item className="d-flex justify-content-between align-items-center">
-                  📖 Chemistry Lab Manual
-                  <small className="text-muted">5 hours ago</small>
-                </ListGroup.Item>
-                <ListGroup.Item className="d-flex justify-content-between align-items-center">
-                  🚲 Mountain Bike
-                  <small className="text-muted">1 day ago</small>
-                </ListGroup.Item>
-                <ListGroup.Item className="d-flex justify-content-between align-items-center">
-                  🏠 Dorm Mini Fridge
-                  <small className="text-muted">2 days ago</small>
-                </ListGroup.Item>
-              </ListGroup>
+              {loading ? (
+                <div className="text-center">
+                  <Spinner animation="border" size="sm" />
+                  <span className="ms-2">Loading...</span>
+                </div>
+              ) : recentItems.length > 0 ? (
+                <ListGroup variant="flush">
+                  {recentItems.map((item, index) => (
+                    <ListGroup.Item key={item.id} className="d-flex justify-content-between align-items-center">
+                      <div>
+                        <strong>{item.title}</strong>
+                        <br />
+                        <small className="text-muted">by {item.seller_name} • ${item.price}</small>
+                      </div>
+                      <small className="text-muted">
+                        {new Date(item.created_at).toLocaleDateString()}
+                      </small>
+                    </ListGroup.Item>
+                  ))}
+                </ListGroup>
+              ) : (
+                <p className="text-muted mb-0">No recent items from your university.</p>
+              )}
             </Card.Body>
           </Card>
         </Col>
