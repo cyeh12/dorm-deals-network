@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Container, Row, Col, Card, Button, Form, Spinner, Alert, ListGroup, InputGroup } from 'react-bootstrap';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { FaArrowLeft, FaPaperPlane, FaEnvelopeOpenText } from 'react-icons/fa';
 
@@ -10,6 +10,7 @@ const apiUrl = process.env.NODE_ENV === 'production'
 
 const MessagingPage = () => {
   const user = JSON.parse(localStorage.getItem('user'));
+  const location = useLocation();
   const [conversations, setConversations] = useState([]);
   const [selectedConv, setSelectedConv] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -25,9 +26,34 @@ const MessagingPage = () => {
       window.location.href = '/login';
       return;
     }
-    fetchConversations();
+    fetchConversations().then(() => {
+      const params = new URLSearchParams(location.search);
+      const sellerId = params.get('sellerId');
+      const itemId = params.get('itemId');
+      if (sellerId) {
+        // Try to find the conversation or create a temp one
+        let conv = null;
+        if (itemId) {
+          conv = conversations.find(c => String(c.other_user_id) === String(sellerId) && String(c.item_id) === String(itemId));
+        } else {
+          conv = conversations.find(c => String(c.other_user_id) === String(sellerId));
+        }
+        if (conv) {
+          setSelectedConv(conv);
+        } else {
+          // If no conversation exists, create a temp one for UI
+          setSelectedConv({
+            other_user_id: Number(sellerId),
+            item_id: itemId ? Number(itemId) : null,
+            other_user_name: '',
+            other_user_profile_image_url: '',
+            content: '',
+          });
+        }
+      }
+    });
     // eslint-disable-next-line
-  }, []);
+  }, [location.search]);
 
   useEffect(() => {
     if (selectedConv) {
@@ -85,6 +111,10 @@ const MessagingPage = () => {
       setMessageText('');
       fetchMessages(selectedConv.other_user_id, selectedConv.item_id);
       fetchConversations();
+      // If temp conversation, refresh conversations and select the new one
+      if (!selectedConv.other_user_name) {
+        setTimeout(fetchConversations, 500);
+      }
     } catch (err) {
       setError('Failed to send message.');
     }
