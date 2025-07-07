@@ -23,6 +23,13 @@ const EditItemPage = () => {
   const [imagePreview, setImagePreview] = useState('');
   const [existingImageUrl, setExistingImageUrl] = useState('');
 
+  const validCategories = [
+    'textbooks', 'electronics', 'furniture', 'clothing', 'transportation', 'other'
+  ];
+  const validConditions = [
+    'new', 'like-new', 'good', 'fair', 'poor'
+  ];
+
   useEffect(() => {
     // Check if user is logged in
     const userData = localStorage.getItem('user');
@@ -49,12 +56,16 @@ const EditItemPage = () => {
         return;
       }
       
+      let category = item.category || '';
+      let condition = item.condition || '';
+      if (!validCategories.includes(category)) category = '';
+      if (!validConditions.includes(condition)) condition = '';
       setFormData({
         title: item.title || '',
         description: item.description || '',
-        category: item.category || '',
+        category,
         price: item.price || '',
-        condition: item.condition || '',
+        condition,
         contact_method: item.contact_method || 'email',
         contact_info: item.contact_info || '',
         status: item.status || 'active'
