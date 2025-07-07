@@ -56,10 +56,10 @@ const EditItemPage = () => {
         return;
       }
       
-      let category = item.category || '';
-      let condition = item.condition || '';
-      if (!validCategories.includes(category)) category = '';
-      if (!validConditions.includes(condition)) condition = '';
+      let category = (item.category || '').toString().trim().toLowerCase();
+      let condition = (item.condition || '').toString().trim().toLowerCase();
+      if (!validCategories.includes(category)) category = validCategories[0];
+      if (!validConditions.includes(condition)) condition = validConditions[0];
       setFormData({
         title: item.title || '',
         description: item.description || '',
