@@ -510,15 +510,13 @@ app.delete('/api/users/:userId/profile-image', async (req, res) => {
   }
 });
 
-// API route: Get single item (increment views)
+// API route: Get single item (increment views only if not owner)
 app.get('/api/items/:itemId', async (req, res) => {
   console.log('[DEBUG] Get single item request received');
   const { itemId } = req.params;
-  
+  const viewerId = req.query.viewerId;
   try {
-    // Increment views
-    await pool.query('UPDATE items SET views = views + 1 WHERE id = $1', [itemId]);
-    // Fetch item with updated views
+    // Fetch item first
     const result = await pool.query(`
       SELECT items.*, users.name as seller_name, users.email as seller_email, 
              universities.name as university_name, universities.domain as university_domain
@@ -527,14 +525,27 @@ app.get('/api/items/:itemId', async (req, res) => {
       LEFT JOIN universities ON users.university_id = universities.id
       WHERE items.id = $1
     `, [itemId]);
-    
     if (result.rows.length === 0) {
       console.log('[DEBUG] Item not found');
       return res.status(404).json({ message: 'Item not found.' });
     }
-    
-    console.log('[DEBUG] Item found:', result.rows[0]);
-    res.json(result.rows[0]);
+    const item = result.rows[0];
+    // Only increment views if viewerId is provided and not the owner
+    if (viewerId && String(viewerId) !== String(item.user_id)) {
+      await pool.query('UPDATE items SET views = views + 1 WHERE id = $1', [itemId]);
+      // Re-fetch item with updated views
+      const updatedResult = await pool.query(`
+        SELECT items.*, users.name as seller_name, users.email as seller_email, 
+               universities.name as university_name, universities.domain as university_domain
+        FROM items 
+        JOIN users ON items.user_id = users.id 
+        LEFT JOIN universities ON users.university_id = universities.id
+        WHERE items.id = $1
+      `, [itemId]);
+      res.json(updatedResult.rows[0]);
+    } else {
+      res.json(item);
+    }
   } catch (err) {
     console.error('[DEBUG] Get single item error:', err);
     if (err.message.includes('relation "items" does not exist')) {

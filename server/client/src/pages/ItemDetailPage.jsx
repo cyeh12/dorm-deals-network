@@ -17,11 +17,12 @@ const ItemDetailPage = () => {
   useEffect(() => {
     // Get current user
     const userData = localStorage.getItem('user');
+    let parsedUser = null;
     if (userData) {
-      setUser(JSON.parse(userData));
+      parsedUser = JSON.parse(userData);
+      setUser(parsedUser);
     }
-    
-    fetchItemDetails();
+    fetchItemDetails(parsedUser);
   }, [itemId]);
 
   useEffect(() => {
@@ -30,13 +31,17 @@ const ItemDetailPage = () => {
     }
   }, [item]);
 
-  const fetchItemDetails = async () => {
+  // Update fetchItemDetails to accept user
+  const fetchItemDetails = async (currentUser) => {
     try {
       const apiUrl = process.env.NODE_ENV === 'production'
         ? 'https://college-student-marketplace-039076a3e43e.herokuapp.com'
         : 'http://localhost:5000';
-
-      const response = await axios.get(`${apiUrl}/api/items/${itemId}`);
+      let url = `${apiUrl}/api/items/${itemId}`;
+      if (currentUser && currentUser.id) {
+        url += `?viewerId=${currentUser.id}`;
+      }
+      const response = await axios.get(url);
       
       // Get seller info and university info
       const itemWithDetails = await enrichItemWithDetails(response.data);
