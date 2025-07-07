@@ -13,6 +13,7 @@ import EditItemPage from './pages/EditItemPage';
 import BrowseItemsPage from './pages/BrowseItemsPage';
 import ItemDetailPage from './pages/ItemDetailPage';
 import SavedItemsPage from './pages/SavedItemsPage';
+import MessagingPage from './pages/MessagingPage';
 // import MarketplacePage from './pages/MarketplacePage';
 // import StudyGroupsPage from './pages/StudyGroupsPage';
 // import UserDashboardPage from './pages/UserDashboardPage';
@@ -32,7 +33,7 @@ function App() {
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/post-item" element={<PostItemPage />} />
             <Route path="/browse" element={<BrowseItemsPage />} />
-            <Route path="/messages" element={<ComingSoonPage feature="Messages" />} />
+            <Route path="/messages" element={<MessagingPage />} />
             <Route path="/my-listings" element={<MyListingsPage />} />
             <Route path="/edit-item/:itemId" element={<EditItemPage />} />
             <Route path="/items/:itemId" element={<ItemDetailPage />} />

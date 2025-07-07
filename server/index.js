@@ -485,50 +485,108 @@ const ensureSavedItemsTable = async () => {
 // Call the migration
 ensureSavedItemsTable();
 
-// API route: Save an item
-app.post('/api/users/:userId/saved-items/:itemId', async (req, res) => {
-  const { userId, itemId } = req.params;
+// Database migration: Add messages table if it doesn't exist
+const ensureMessagesTable = async () => {
   try {
-    await pool.query(
-      'INSERT INTO saved_items (user_id, item_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
-      [userId, itemId]
-    );
-    res.json({ message: 'Item saved.' });
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS messages (
+        id SERIAL PRIMARY KEY,
+        sender_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        receiver_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        item_id INTEGER REFERENCES items(id) ON DELETE SET NULL,
+        content TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW(),
+        is_read BOOLEAN DEFAULT FALSE
+      )
+    `);
+    console.log('[DEBUG] messages table ensured');
   } catch (err) {
-    console.error('[DEBUG] Save item error:', err);
-    res.status(500).json({ message: 'Error saving item.' });
+    console.log('[DEBUG] Error ensuring messages table:', err.message);
+  }
+};
+// Call the migration
+ensureMessagesTable();
+
+// API route: Send a message
+app.post('/api/messages', async (req, res) => {
+  const { sender_id, receiver_id, item_id, content } = req.body;
+  if (!sender_id || !receiver_id || !content) {
+    return res.status(400).json({ message: 'Missing required fields.' });
+  }
+  try {
+    const result = await pool.query(
+      `INSERT INTO messages (sender_id, receiver_id, item_id, content) VALUES ($1, $2, $3, $4) RETURNING *`,
+      [sender_id, receiver_id, item_id || null, content]
+    );
+    res.status(201).json({ message: 'Message sent.', messageObj: result.rows[0] });
+  } catch (err) {
+    console.error('[DEBUG] Send message error:', err);
+    res.status(500).json({ message: 'Error sending message.' });
   }
 });
 
-// API route: Unsave an item
-app.delete('/api/users/:userId/saved-items/:itemId', async (req, res) => {
-  const { userId, itemId } = req.params;
-  try {
-    await pool.query(
-      'DELETE FROM saved_items WHERE user_id = $1 AND item_id = $2',
-      [userId, itemId]
-    );
-    res.json({ message: 'Item unsaved.' });
-  } catch (err) {
-    console.error('[DEBUG] Unsave item error:', err);
-    res.status(500).json({ message: 'Error unsaving item.' });
-  }
-});
-
-// API route: Get all saved items for a user (include item status)
-app.get('/api/users/:userId/saved-items', async (req, res) => {
+// API route: Get all conversations for a user (latest message per user pair)
+app.get('/api/users/:userId/conversations', async (req, res) => {
   const { userId } = req.params;
   try {
     const result = await pool.query(`
-      SELECT items.*, items.status as item_status FROM saved_items
-      JOIN items ON saved_items.item_id = items.id
-      WHERE saved_items.user_id = $1
-      ORDER BY saved_items.created_at DESC
+      SELECT DISTINCT ON (other_user.id, m.item_id)
+        m.*, 
+        CASE WHEN m.sender_id = $1 THEN m.receiver_id ELSE m.sender_id END as other_user_id,
+        other_user.name as other_user_name,
+        other_user.profile_image_url as other_user_profile_image_url
+      FROM messages m
+      JOIN users other_user ON other_user.id = CASE WHEN m.sender_id = $1 THEN m.receiver_id ELSE m.sender_id END
+      WHERE m.sender_id = $1 OR m.receiver_id = $1
+      ORDER BY other_user.id, m.item_id, m.created_at DESC
     `, [userId]);
     res.json(result.rows);
   } catch (err) {
-    console.error('[DEBUG] Get saved items error:', err);
-    res.status(500).json({ message: 'Error fetching saved items.' });
+    console.error('[DEBUG] Get conversations error:', err);
+    res.status(500).json({ message: 'Error fetching conversations.' });
+  }
+});
+
+// API route: Get all messages between two users (optionally for an item)
+app.get('/api/messages', async (req, res) => {
+  const { user1, user2, item_id } = req.query;
+  if (!user1 || !user2) {
+    return res.status(400).json({ message: 'Missing user ids.' });
+  }
+  try {
+    let query = `SELECT * FROM messages WHERE ((sender_id = $1 AND receiver_id = $2) OR (sender_id = $2 AND receiver_id = $1))`;
+    let params = [user1, user2];
+    if (item_id) {
+      query += ' AND item_id = $3';
+      params.push(item_id);
+    }
+    query += ' ORDER BY created_at ASC';
+    const result = await pool.query(query, params);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('[DEBUG] Get messages error:', err);
+    res.status(500).json({ message: 'Error fetching messages.' });
+  }
+});
+
+// API route: Mark messages as read
+app.post('/api/messages/mark-read', async (req, res) => {
+  const { user_id, other_user_id, item_id } = req.body;
+  if (!user_id || !other_user_id) {
+    return res.status(400).json({ message: 'Missing user ids.' });
+  }
+  try {
+    let query = `UPDATE messages SET is_read = TRUE WHERE receiver_id = $1 AND sender_id = $2`;
+    let params = [user_id, other_user_id];
+    if (item_id) {
+      query += ' AND item_id = $3';
+      params.push(item_id);
+    }
+    await pool.query(query, params);
+    res.json({ message: 'Messages marked as read.' });
+  } catch (err) {
+    console.error('[DEBUG] Mark messages read error:', err);
+    res.status(500).json({ message: 'Error marking messages as read.' });
   }
 });
 
