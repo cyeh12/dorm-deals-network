@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Button, Badge, Spinner, Alert } from 'react-bootstrap';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { FaUser, FaEnvelope, FaPhone, FaMapMarkerAlt, FaClock, FaTag, FaArrowLeft, FaEdit, FaHeart, FaRegHeart } from 'react-icons/fa';
+import { FaUser, FaEnvelope, FaPhone, FaMapMarkerAlt, FaClock, FaTag, FaArrowLeft, FaEdit, FaHeart, FaRegHeart, FaComments } from 'react-icons/fa';
 import axios from 'axios';
 import '../styles/ItemDetailPage.css';
 
@@ -397,7 +397,7 @@ const ItemDetailPage = () => {
                       as={Link}
                       to={user ? `/messages?sellerId=${item.user_id}&itemId=${item.id}` : '/login'}
                     >
-                      <FaEnvelope className="me-2" />
+                      <FaComments className="me-2" />
                       Message Seller
                     </Button>
                   </>
