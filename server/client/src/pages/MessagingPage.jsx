@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Container, Row, Col, Card, Button, Form, Spinner, Alert, ListGroup, InputGroup } from 'react-bootstrap';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
-import { FaArrowLeft, FaPaperPlane, FaEnvelopeOpenText } from 'react-icons/fa';
+import { FaArrowLeft, FaPaperPlane, FaEnvelopeOpenText, FaUser, FaPhone, FaMapMarkerAlt, FaClock, FaTag } from 'react-icons/fa';
 
 const apiUrl = process.env.NODE_ENV === 'production'
   ? 'https://college-student-marketplace-039076a3e43e.herokuapp.com'
@@ -18,6 +18,7 @@ const MessagingPage = () => {
   const [loading, setLoading] = useState(true);
   const [msgLoading, setMsgLoading] = useState(false);
   const [error, setError] = useState('');
+  const [sidebarInfo, setSidebarInfo] = useState({ seller: null, item: null });
   const messagesEndRef = useRef(null);
   const navigate = useNavigate();
 
@@ -65,6 +66,35 @@ const MessagingPage = () => {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Fetch sidebar info when selectedConv changes
+  useEffect(() => {
+    const fetchSidebarInfo = async () => {
+      if (!selectedConv) return;
+      let seller = null;
+      let item = null;
+      try {
+        if (selectedConv.other_user_id) {
+          const res = await axios.get(`${apiUrl}/api/users/${selectedConv.other_user_id}/items`);
+          // Use the first item to get seller info (name, etc.)
+          if (res.data.length > 0) {
+            seller = {
+              name: res.data[0].seller_name || '',
+              profile_image_url: res.data[0].profile_image_url || '',
+              university_name: res.data[0].university_name || '',
+            };
+          }
+        }
+        if (selectedConv.item_id) {
+          const res = await axios.get(`${apiUrl}/api/items/${selectedConv.item_id}`);
+          item = res.data;
+        }
+      } catch (e) {}
+      setSidebarInfo({ seller, item });
+    };
+    fetchSidebarInfo();
+    // eslint-disable-next-line
+  }, [selectedConv]);
 
   const fetchConversations = async () => {
     setLoading(true);
@@ -168,6 +198,32 @@ const MessagingPage = () => {
               ))}
             </ListGroup>
           </Card>
+          {/* Sidebar info for seller and item */}
+          {(sidebarInfo.seller || sidebarInfo.item) && (
+            <Card className="mt-3">
+              <Card.Header>Conversation Info</Card.Header>
+              <Card.Body>
+                {sidebarInfo.seller && (
+                  <div className="mb-3">
+                    <div className="fw-bold mb-1"><FaUser className="me-2" />Seller</div>
+                    <div>{sidebarInfo.seller.name}</div>
+                    {sidebarInfo.seller.university_name && (
+                      <div className="text-muted small"><FaMapMarkerAlt className="me-1" />{sidebarInfo.seller.university_name}</div>
+                    )}
+                  </div>
+                )}
+                {sidebarInfo.item && (
+                  <div>
+                    <div className="fw-bold mb-1"><FaTag className="me-2" />Item</div>
+                    <div>{sidebarInfo.item.title}</div>
+                    <div className="text-muted small">Category: {sidebarInfo.item.category}</div>
+                    <div className="text-muted small">Price: ${sidebarInfo.item.price}</div>
+                    <div className="text-muted small">Condition: {sidebarInfo.item.condition}</div>
+                  </div>
+                )}
+              </Card.Body>
+            </Card>
+          )}
         </Col>
         <Col md={8}>
           {selectedConv ? (
