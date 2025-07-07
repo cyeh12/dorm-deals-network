@@ -75,6 +75,11 @@ const SavedItemsPage = () => {
                   </Card.Title>
                   <Card.Text>${parseFloat(item.price).toFixed(2)}</Card.Text>
                   <Card.Text className="text-muted small">{item.category}</Card.Text>
+                  {item.item_status && (
+                    <Card.Text className={`fw-bold mb-0 status-label status-${item.item_status}`}>
+                      Status: {item.item_status.charAt(0).toUpperCase() + item.item_status.slice(1)}
+                    </Card.Text>
+                  )}
                 </Card.Body>
               </Card>
             </Col>

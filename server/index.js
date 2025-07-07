@@ -515,12 +515,12 @@ app.delete('/api/users/:userId/saved-items/:itemId', async (req, res) => {
   }
 });
 
-// API route: Get all saved items for a user
+// API route: Get all saved items for a user (include item status)
 app.get('/api/users/:userId/saved-items', async (req, res) => {
   const { userId } = req.params;
   try {
     const result = await pool.query(`
-      SELECT items.* FROM saved_items
+      SELECT items.*, items.status as item_status FROM saved_items
       JOIN items ON saved_items.item_id = items.id
       WHERE saved_items.user_id = $1
       ORDER BY saved_items.created_at DESC
