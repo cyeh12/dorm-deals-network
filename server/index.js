@@ -465,6 +465,73 @@ const ensureViewsColumn = async () => {
 // Call the migration
 ensureViewsColumn();
 
+// Database migration: Add saved_items table if it doesn't exist
+const ensureSavedItemsTable = async () => {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS saved_items (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        item_id INTEGER REFERENCES items(id) ON DELETE CASCADE,
+        created_at TIMESTAMP DEFAULT NOW(),
+        UNIQUE(user_id, item_id)
+      )
+    `);
+    console.log('[DEBUG] saved_items table ensured');
+  } catch (err) {
+    console.log('[DEBUG] Error ensuring saved_items table:', err.message);
+  }
+};
+// Call the migration
+ensureSavedItemsTable();
+
+// API route: Save an item
+app.post('/api/users/:userId/saved-items/:itemId', async (req, res) => {
+  const { userId, itemId } = req.params;
+  try {
+    await pool.query(
+      'INSERT INTO saved_items (user_id, item_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+      [userId, itemId]
+    );
+    res.json({ message: 'Item saved.' });
+  } catch (err) {
+    console.error('[DEBUG] Save item error:', err);
+    res.status(500).json({ message: 'Error saving item.' });
+  }
+});
+
+// API route: Unsave an item
+app.delete('/api/users/:userId/saved-items/:itemId', async (req, res) => {
+  const { userId, itemId } = req.params;
+  try {
+    await pool.query(
+      'DELETE FROM saved_items WHERE user_id = $1 AND item_id = $2',
+      [userId, itemId]
+    );
+    res.json({ message: 'Item unsaved.' });
+  } catch (err) {
+    console.error('[DEBUG] Unsave item error:', err);
+    res.status(500).json({ message: 'Error unsaving item.' });
+  }
+});
+
+// API route: Get all saved items for a user
+app.get('/api/users/:userId/saved-items', async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const result = await pool.query(`
+      SELECT items.* FROM saved_items
+      JOIN items ON saved_items.item_id = items.id
+      WHERE saved_items.user_id = $1
+      ORDER BY saved_items.created_at DESC
+    `, [userId]);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('[DEBUG] Get saved items error:', err);
+    res.status(500).json({ message: 'Error fetching saved items.' });
+  }
+});
+
 // API route: Upload or update user profile image
 app.post('/api/users/:userId/profile-image', upload.single('image'), async (req, res) => {
   console.log('[DEBUG] Profile image upload request received');
