@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Button, Form, Badge, Spinner, InputGroup } from 'react-bootstrap';
 import { FaSearch, FaFilter, FaMapMarkerAlt, FaUser, FaEnvelope, FaPhone } from 'react-icons/fa';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import '../styles/BrowseItemsPage.css';
 
@@ -393,6 +393,8 @@ const BrowseItemsPage = () => {
                       <Button
                         variant="primary"
                         size="sm"
+                        as={Link}
+                        to={`/items/${item.id}`}
                       >
                         View Details
                       </Button>

@@ -195,7 +195,9 @@ const DashboardPage = () => {
                   {recentItems.map((item, index) => (
                     <ListGroup.Item key={item.id} className="d-flex justify-content-between align-items-center">
                       <div>
-                        <strong>{item.title}</strong>
+                        <Link to={`/items/${item.id}`} className="text-decoration-none">
+                          <strong>{item.title}</strong>
+                        </Link>
                         <br />
                         <small className="text-muted">by {item.seller_name} • ${item.price}</small>
                         <br />
