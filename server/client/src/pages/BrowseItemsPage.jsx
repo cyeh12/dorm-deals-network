@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Button, Form, Badge, Spinner, InputGroup } from 'react-bootstrap';
 import { FaSearch, FaFilter, FaMapMarkerAlt, FaUser, FaEnvelope, FaPhone } from 'react-icons/fa';
+import { useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import '../styles/BrowseItemsPage.css';
 
 const BrowseItemsPage = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [items, setItems] = useState([]);
   const [filteredItems, setFilteredItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -37,6 +39,14 @@ const BrowseItemsPage = () => {
     fetchItems();
     fetchUniversities();
   }, []);
+
+  // Handle URL parameters
+  useEffect(() => {
+    const categoryParam = searchParams.get('category');
+    if (categoryParam && categoryParam !== selectedCategory) {
+      setSelectedCategory(categoryParam);
+    }
+  }, [searchParams, selectedCategory]);
 
   useEffect(() => {
     filterAndSortItems();
@@ -72,6 +82,13 @@ const BrowseItemsPage = () => {
 
   const filterAndSortItems = () => {
     let filtered = [...items];
+    
+    console.log('[DEBUG] Starting filter with:', {
+      totalItems: items.length,
+      selectedCategory,
+      searchTerm,
+      selectedUniversity
+    });
 
     // Filter by search term
     if (searchTerm) {
@@ -80,16 +97,24 @@ const BrowseItemsPage = () => {
         item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.seller_name.toLowerCase().includes(searchTerm.toLowerCase())
       );
+      console.log('[DEBUG] After search filter:', filtered.length);
     }
 
-    // Filter by category
+    // Filter by category (case-insensitive)
     if (selectedCategory !== 'all') {
-      filtered = filtered.filter(item => item.category === selectedCategory);
+      console.log('[DEBUG] Filtering by category:', selectedCategory);
+      console.log('[DEBUG] Available categories in items:', [...new Set(items.map(item => item.category))]);
+      
+      filtered = filtered.filter(item => 
+        item.category && item.category.toLowerCase() === selectedCategory.toLowerCase()
+      );
+      console.log('[DEBUG] After category filter:', filtered.length);
     }
 
     // Filter by university
     if (selectedUniversity !== 'all') {
       filtered = filtered.filter(item => item.university_name === selectedUniversity);
+      console.log('[DEBUG] After university filter:', filtered.length);
     }
 
     // Filter by price range
@@ -128,12 +153,29 @@ const BrowseItemsPage = () => {
     setSearchTerm(e.target.value);
   };
 
+  const handleCategoryChange = (e) => {
+    const newCategory = e.target.value;
+    setSelectedCategory(newCategory);
+    
+    // Update URL parameters
+    if (newCategory === 'all') {
+      searchParams.delete('category');
+    } else {
+      searchParams.set('category', newCategory);
+    }
+    setSearchParams(searchParams);
+  };
+
   const clearFilters = () => {
     setSearchTerm('');
     setSelectedCategory('all');
     setSelectedUniversity('all');
     setPriceRange({ min: '', max: '' });
     setSortBy('newest');
+    
+    // Clear URL parameters
+    searchParams.delete('category');
+    setSearchParams(searchParams);
   };
 
   const formatPrice = (price) => {
@@ -209,7 +251,7 @@ const BrowseItemsPage = () => {
                 <Col md={2}>
                   <Form.Select
                     value={selectedCategory}
-                    onChange={(e) => setSelectedCategory(e.target.value)}
+                    onChange={handleCategoryChange}
                   >
                     {categories.map(cat => (
                       <option key={cat.value} value={cat.value}>{cat.label}</option>
