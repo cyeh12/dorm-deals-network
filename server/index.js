@@ -624,6 +624,100 @@ app.get('/api/items/:itemId', async (req, res) => {
   }
 });
 
+// API route: Update item
+app.put('/api/items/:itemId', upload.single('image'), async (req, res) => {
+  console.log('[DEBUG] Update item request received');
+  const { itemId } = req.params;
+  const {
+    title,
+    description,
+    category,
+    price,
+    condition,
+    contact_method,
+    contact_info,
+    user_id,
+    status
+  } = req.body;
+  let imageUrl;
+
+  try {
+    // Check if item exists
+    const itemCheck = await pool.query('SELECT * FROM items WHERE id = $1', [itemId]);
+    if (itemCheck.rows.length === 0) {
+      console.log(`[DEBUG] Item with id ${itemId} not found for update.`);
+      return res.status(404).json({ message: 'Item not found.' });
+    }
+    const oldItem = itemCheck.rows[0];
+
+    // Only allow the owner to update
+    if (user_id && String(user_id) !== String(oldItem.user_id)) {
+      console.log('[DEBUG] Unauthorized update attempt by user:', user_id);
+      return res.status(403).json({ message: 'You are not authorized to update this item.' });
+    }
+
+    // Handle image upload
+    if (req.file) {
+      console.log('[DEBUG] New image file received:', req.file.originalname);
+      imageUrl = req.file.path;
+    } else if (typeof req.body.image_url === 'string' && req.body.image_url.trim() !== '') {
+      imageUrl = req.body.image_url;
+    } else if (req.body.image_url === null || req.body.image_url === '') {
+      imageUrl = null;
+    } else {
+      imageUrl = oldItem.image_url;
+    }
+
+    // Build update fields
+    const updateFields = {
+      title: title !== undefined ? title : oldItem.title,
+      description: description !== undefined ? description : oldItem.description,
+      category: category !== undefined ? category : oldItem.category,
+      price: price !== undefined ? price : oldItem.price,
+      condition: condition !== undefined ? condition : oldItem.condition,
+      contact_method: contact_method !== undefined ? contact_method : oldItem.contact_method,
+      contact_info: contact_info !== undefined ? contact_info : oldItem.contact_info,
+      status: status !== undefined ? status : oldItem.status,
+      image_url: imageUrl
+    };
+
+    // Update query
+    const result = await pool.query(
+      `UPDATE items SET
+        title = $1,
+        description = $2,
+        category = $3,
+        price = $4,
+        condition = $5,
+        contact_method = $6,
+        contact_info = $7,
+        status = $8,
+        image_url = $9,
+        updated_at = NOW()
+      WHERE id = $10
+      RETURNING *`,
+      [
+        updateFields.title,
+        updateFields.description,
+        updateFields.category,
+        updateFields.price,
+        updateFields.condition,
+        updateFields.contact_method,
+        updateFields.contact_info,
+        updateFields.status,
+        updateFields.image_url,
+        itemId
+      ]
+    );
+
+    console.log('[DEBUG] Item updated successfully:', result.rows[0].id);
+    res.json({ message: 'Item updated successfully', item: result.rows[0] });
+  } catch (err) {
+    console.error('[DEBUG] Update item error:', err);
+    res.status(500).json({ message: 'Error updating item.', error: err.message });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
