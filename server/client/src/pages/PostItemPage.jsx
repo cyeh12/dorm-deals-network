@@ -14,6 +14,8 @@ const PostItemPage = () => {
     contact_method: 'email',
     contact_info: ''
   });
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -63,6 +65,42 @@ const PostItemPage = () => {
     }));
   };
 
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+      if (!allowedTypes.includes(file.type)) {
+        setError('Please select a valid image file (JPEG, PNG, GIF, or WebP)');
+        return;
+      }
+      
+      // Validate file size (5MB limit)
+      const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+      if (file.size > maxSize) {
+        setError('Image file size must be less than 5MB');
+        return;
+      }
+      
+      setSelectedImage(file);
+      
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+      
+      // Clear any existing error
+      setError('');
+    }
+  };
+
+  const removeImage = () => {
+    setSelectedImage(null);
+    setImagePreview('');
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -103,13 +141,27 @@ const PostItemPage = () => {
         ? 'https://college-student-marketplace-039076a3e43e.herokuapp.com/api/items'
         : 'http://localhost:5000/api/items';
 
-      const itemData = {
-        ...formData,
-        price: parseFloat(formData.price),
-        user_id: user.id
-      };
+      // Create FormData for multipart/form-data
+      const formDataToSend = new FormData();
+      formDataToSend.append('title', formData.title);
+      formDataToSend.append('description', formData.description);
+      formDataToSend.append('category', formData.category);
+      formDataToSend.append('price', parseFloat(formData.price));
+      formDataToSend.append('condition', formData.condition);
+      formDataToSend.append('contact_method', formData.contact_method);
+      formDataToSend.append('contact_info', formData.contact_info);
+      formDataToSend.append('user_id', user.id);
+      
+      // Add image if selected
+      if (selectedImage) {
+        formDataToSend.append('image', selectedImage);
+      }
 
-      const res = await axios.post(apiUrl, itemData);
+      const res = await axios.post(apiUrl, formDataToSend, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
       
       console.log('[DEBUG] Item posted successfully:', res.data);
       setSuccess('Item posted successfully!');
@@ -124,6 +176,8 @@ const PostItemPage = () => {
         contact_method: 'email',
         contact_info: ''
       });
+      setSelectedImage(null);
+      setImagePreview('');
 
       // Redirect to dashboard after 2 seconds
       setTimeout(() => {
@@ -180,6 +234,44 @@ const PostItemPage = () => {
                     placeholder="Describe your item in detail. Include any defects, accessories included, etc."
                     required
                   />
+                </Form.Group>
+
+                {/* Image Upload */}
+                <Form.Group className="mb-3">
+                  <Form.Label>Item Photo</Form.Label>
+                  <Form.Control
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                  />
+                  <Form.Text className="text-muted">
+                    Optional: Upload a photo of your item (JPEG, PNG, GIF, or WebP - max 5MB)
+                  </Form.Text>
+                  
+                  {imagePreview && (
+                    <div className="mt-3 text-center">
+                      <img
+                        src={imagePreview}
+                        alt="Preview"
+                        style={{
+                          maxWidth: '200px',
+                          maxHeight: '200px',
+                          objectFit: 'cover',
+                          border: '1px solid #ddd',
+                          borderRadius: '8px'
+                        }}
+                      />
+                      <div className="mt-2">
+                        <Button
+                          variant="outline-danger"
+                          size="sm"
+                          onClick={removeImage}
+                        >
+                          Remove Image
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </Form.Group>
 
                 {/* Category and Price Row */}

@@ -4,8 +4,38 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const fs = require('fs');
 const { Pool } = require('pg');
+const multer = require('multer');
+const cloudinary = require('cloudinary').v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// Cloudinary configuration
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'demo',
+  api_key: process.env.CLOUDINARY_API_KEY || 'demo',
+  api_secret: process.env.CLOUDINARY_API_SECRET || 'demo'
+});
+
+// Configure multer storage for Cloudinary
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'college-marketplace',
+    allowedFormats: ['jpeg', 'jpg', 'png', 'gif', 'webp'],
+    transformation: [
+      { width: 800, height: 600, crop: 'limit' },
+      { quality: 'auto' }
+    ]
+  }
+});
+
+const upload = multer({ 
+  storage: storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
+  }
+});
 
 // Database connection setup
 const pool = new Pool({
@@ -164,11 +194,12 @@ app.post('/api/login', async (req, res) => {
 });
 
 // API route: Post new item
-app.post('/api/items', async (req, res) => {
+app.post('/api/items', upload.single('image'), async (req, res) => {
   console.log('[DEBUG] Post item request received');
   console.log('[DEBUG] Request body:', req.body);
   
   const { title, description, category, price, condition, contact_method, contact_info, user_id } = req.body;
+  let imageUrl;
   
   if (!title || !description || !category || !price || !condition || !user_id) {
     console.log('[DEBUG] Missing required fields');
@@ -189,12 +220,20 @@ app.post('/api/items', async (req, res) => {
     // Set default contact info to user's email if not provided
     finalContactInfo = contact_method === 'email' ? userCheck.rows[0].email : contact_info;
     
+    // Handle image upload
+    if (req.file) {
+      console.log('[DEBUG] Image file received:', req.file.originalname);
+      imageUrl = req.file.path;
+    } else {
+      console.log('[DEBUG] No image file received');
+    }
+    
     console.log('[DEBUG] Inserting new item...');
     const result = await pool.query(
-      `INSERT INTO items (title, description, category, price, condition, contact_method, contact_info, user_id, created_at, status) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), 'active') 
+      `INSERT INTO items (title, description, category, price, condition, contact_method, contact_info, user_id, created_at, status, image_url) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), 'active', $9) 
        RETURNING *`,
-      [title, description, category, price, condition, contact_method, finalContactInfo, user_id]
+      [title, description, category, price, condition, contact_method, finalContactInfo, user_id, imageUrl]
     );
   
     console.log('[DEBUG] Item inserted successfully:', result.rows[0].id);
@@ -224,17 +263,18 @@ app.post('/api/items', async (req, res) => {
             user_id INTEGER REFERENCES users(id),
             created_at TIMESTAMP DEFAULT NOW(),
             updated_at TIMESTAMP DEFAULT NOW(),
-            status VARCHAR(20) DEFAULT 'active'
+            status VARCHAR(20) DEFAULT 'active',
+            image_url VARCHAR(255)
           )
         `);
         console.log('[DEBUG] Items table created successfully');
         
         // Retry the insert
         const retryResult = await pool.query(
-          `INSERT INTO items (title, description, category, price, condition, contact_method, contact_info, user_id, created_at, status) 
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), 'active') 
+          `INSERT INTO items (title, description, category, price, condition, contact_method, contact_info, user_id, created_at, status, image_url) 
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), 'active', $9) 
            RETURNING *`,
-          [title, description, category, price, condition, contact_method, finalContactInfo, user_id]
+          [title, description, category, price, condition, contact_method, finalContactInfo, user_id, imageUrl]
         );
         
         console.log('[DEBUG] Item inserted successfully after table creation:', retryResult.rows[0].id);
@@ -389,10 +429,14 @@ app.get('/api/items/:itemId', async (req, res) => {
   
   try {
     console.log('[DEBUG] Fetching item:', itemId);
-    const result = await pool.query(
-      'SELECT * FROM items WHERE id = $1',
-      [itemId]
-    );
+    const result = await pool.query(`
+      SELECT items.*, users.name as seller_name, users.email as seller_email, 
+             universities.name as university_name, universities.domain as university_domain
+      FROM items 
+      JOIN users ON items.user_id = users.id 
+      LEFT JOIN universities ON users.university_id = universities.id
+      WHERE items.id = $1
+    `, [itemId]);
     
     if (result.rows.length === 0) {
       console.log('[DEBUG] Item not found');
@@ -413,10 +457,11 @@ app.get('/api/items/:itemId', async (req, res) => {
 });
 
 // API route: Update item
-app.put('/api/items/:itemId', async (req, res) => {
+app.put('/api/items/:itemId', upload.single('image'), async (req, res) => {
   console.log('[DEBUG] Update item request received');
   const { itemId } = req.params;
   const { title, description, category, price, condition, contact_method, contact_info, status } = req.body;
+  let imageUrl;
   
   if (!title || !description || !category || !price || !condition) {
     console.log('[DEBUG] Missing required fields');
@@ -442,14 +487,24 @@ app.put('/api/items/:itemId', async (req, res) => {
       }
     }
     
+    // Handle image upload
+    if (req.file) {
+      console.log('[DEBUG] Image file received for update:', req.file.originalname);
+      imageUrl = req.file.path;
+    } else {
+      console.log('[DEBUG] No image file received for update, keeping existing image');
+      imageUrl = itemCheck.rows[0].image_url; // Keep existing image if no new image
+    }
+    
     // Update the item
     const result = await pool.query(
       `UPDATE items 
        SET title = $1, description = $2, category = $3, price = $4, condition = $5, 
-           contact_method = $6, contact_info = $7, status = $8, updated_at = NOW()
-       WHERE id = $9 
+           contact_method = $6, contact_info = $7, status = $8, updated_at = NOW(),
+           image_url = $9
+       WHERE id = $10 
        RETURNING *`,
-      [title, description, category, price, condition, contact_method, finalContactInfo, status || 'active', itemId]
+      [title, description, category, price, condition, contact_method, finalContactInfo, status || 'active', imageUrl, itemId]
     );
     
     console.log('[DEBUG] Item updated successfully:', result.rows[0]);
@@ -468,6 +523,65 @@ app.put('/api/items/:itemId', async (req, res) => {
     }
   }
 });
+
+// Add image upload endpoint
+app.post('/api/upload-image', upload.single('image'), async (req, res) => {
+  console.log('[DEBUG] Image upload request received');
+  
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No image file provided.' });
+    }
+    
+    console.log('[DEBUG] Image uploaded successfully to Cloudinary:', req.file.path);
+    
+    res.json({
+      message: 'Image uploaded successfully',
+      imageUrl: req.file.path,
+      publicId: req.file.filename
+    });
+  } catch (err) {
+    console.error('[DEBUG] Image upload error:', err);
+    res.status(500).json({ message: 'Error uploading image.' });
+  }
+});
+
+// Add image deletion endpoint
+app.delete('/api/delete-image/:publicId', async (req, res) => {
+  console.log('[DEBUG] Image deletion request received');
+  
+  try {
+    const { publicId } = req.params;
+    
+    // Delete from Cloudinary
+    const result = await cloudinary.uploader.destroy(publicId);
+    
+    console.log('[DEBUG] Image deleted from Cloudinary:', result);
+    
+    res.json({
+      message: 'Image deleted successfully',
+      result: result
+    });
+  } catch (err) {
+    console.error('[DEBUG] Image deletion error:', err);
+    res.status(500).json({ message: 'Error deleting image.' });
+  }
+});
+
+// Database migration: Add image_url column to items table if it doesn't exist
+const ensureImageColumn = async () => {
+  try {
+    await pool.query(`
+      ALTER TABLE items ADD COLUMN IF NOT EXISTS image_url VARCHAR(255)
+    `);
+    console.log('[DEBUG] Image column ensured in items table');
+  } catch (err) {
+    console.log('[DEBUG] Error ensuring image column (table might not exist yet):', err.message);
+  }
+};
+
+// Call the migration
+ensureImageColumn();
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

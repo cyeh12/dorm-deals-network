@@ -207,14 +207,31 @@ const DashboardPage = () => {
                 <ListGroup variant="flush">
                   {recentItems.map((item, index) => (
                     <ListGroup.Item key={item.id} className="d-flex justify-content-between align-items-center">
-                      <div>
-                        <Link to={`/items/${item.id}`} className="text-decoration-none">
-                          <strong>{item.title}</strong>
-                        </Link>
-                        <br />
-                        <small className="text-muted">by {item.seller_name} • ${item.price}</small>
-                        <br />
-                        <small className="text-muted">📍 {item.university_name || 'Unknown University'}</small>
+                      <div className="d-flex align-items-center">
+                        {item.image_url && (
+                          <img
+                            src={item.image_url}
+                            alt={item.title}
+                            className="me-3 rounded"
+                            style={{
+                              width: '50px',
+                              height: '50px',
+                              objectFit: 'cover'
+                            }}
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                            }}
+                          />
+                        )}
+                        <div>
+                          <Link to={`/items/${item.id}`} className="text-decoration-none">
+                            <strong>{item.title}</strong>
+                          </Link>
+                          <br />
+                          <small className="text-muted">by {item.seller_name} • ${item.price}</small>
+                          <br />
+                          <small className="text-muted">📍 {item.university_name || 'Unknown University'}</small>
+                        </div>
                       </div>
                       <small className="text-muted">
                         {new Date(item.created_at).toLocaleDateString()}

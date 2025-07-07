@@ -226,6 +226,25 @@ const ItemDetailPage = () => {
                 </div>
               </div>
 
+              {/* Item Image */}
+              {item.image_url && (
+                <div className="item-image mb-4 text-center">
+                  <img
+                    src={item.image_url}
+                    alt={item.title}
+                    className="img-fluid rounded shadow-sm"
+                    style={{
+                      maxHeight: '400px',
+                      maxWidth: '100%',
+                      objectFit: 'contain'
+                    }}
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                    }}
+                  />
+                </div>
+              )}
+
               {/* Condition Details */}
               <div className="condition-section mb-4 p-3 bg-light rounded">
                 <h6 className="mb-2">Condition Details</h6>

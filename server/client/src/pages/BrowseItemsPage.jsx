@@ -339,6 +339,23 @@ const BrowseItemsPage = () => {
           filteredItems.map(item => (
             <Col key={item.id} md={6} lg={4} className="mb-4">
               <Card className="h-100 item-card">
+                {item.image_url && (
+                  <div className="item-image-container" style={{ height: '200px', overflow: 'hidden' }}>
+                    <Card.Img
+                      variant="top"
+                      src={item.image_url}
+                      alt={item.title}
+                      style={{
+                        height: '200px',
+                        objectFit: 'cover',
+                        width: '100%'
+                      }}
+                      onError={(e) => {
+                        e.target.parentNode.style.display = 'none';
+                      }}
+                    />
+                  </div>
+                )}
                 <Card.Body>
                   <div className="d-flex justify-content-between align-items-start mb-2">
                     <h5 className="card-title mb-0">{item.title}</h5>
