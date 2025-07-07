@@ -132,7 +132,7 @@ const DashboardPage = () => {
               alt="Profile"
               style={{ width: 96, height: 96, borderRadius: '50%', objectFit: 'cover', border: '2px solid #007bff' }}
             />
-            <label htmlFor="profile-image-upload" style={{ position: 'absolute', bottom: 0, right: 0, background: '#007bff', borderRadius: '50%', padding: 8, cursor: 'pointer' }}>
+            <label htmlFor="profile-image-upload" style={{ position: 'absolute', bottom: 0, right: 0, background: '#007bff', borderRadius: '50%', padding: 8, cursor: uploading ? 'not-allowed' : 'pointer' }}>
               <FaCamera color="#fff" />
               <input
                 id="profile-image-upload"
@@ -150,9 +150,15 @@ const DashboardPage = () => {
                 style={{ position: 'absolute', top: 0, right: 0, borderRadius: '50%' }}
                 onClick={handleRemoveProfileImage}
                 disabled={removing}
+                aria-label="Remove profile picture"
               >
                 <FaTrash />
               </Button>
+            )}
+            {uploading && (
+              <div style={{ position: 'absolute', left: 0, top: 0, width: 96, height: 96, background: 'rgba(255,255,255,0.6)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Spinner animation="border" size="sm" />
+              </div>
             )}
           </div>
         </Col>
