@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Button, Badge, ListGroup, Spinner } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import { FaCamera, FaTrash } from 'react-icons/fa';
 
 const DashboardPage = () => {
   const [user, setUser] = useState(null);
@@ -14,6 +15,11 @@ const DashboardPage = () => {
     savedItems: 0,
     totalViews: 0
   });
+  const [uploading, setUploading] = useState(false);
+  const [removing, setRemoving] = useState(false);
+  const apiUrl = process.env.NODE_ENV === 'production'
+    ? 'https://college-student-marketplace-039076a3e43e.herokuapp.com'
+    : 'http://localhost:5000';
 
   useEffect(() => {
     // Get user data from localStorage
@@ -43,10 +49,6 @@ const DashboardPage = () => {
 
   const fetchUserData = async (userId) => {
     try {
-      const apiUrl = process.env.NODE_ENV === 'production'
-        ? 'https://college-student-marketplace-039076a3e43e.herokuapp.com'
-        : 'http://localhost:5000';
-
       // Fetch user's items
       const userItemsRes = await axios.get(`${apiUrl}/api/users/${userId}/items`);
       setUserItems(userItemsRes.data);
@@ -68,6 +70,41 @@ const DashboardPage = () => {
     }
   };
 
+  // Handle profile image upload
+  const handleProfileImageChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploading(true);
+    const formData = new FormData();
+    formData.append('image', file);
+    try {
+      const res = await axios.post(`${apiUrl}/api/users/${user.id}/profile-image`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      setUser((prev) => ({ ...prev, profile_image_url: res.data.profile_image_url }));
+      localStorage.setItem('user', JSON.stringify({ ...user, profile_image_url: res.data.profile_image_url }));
+    } catch (err) {
+      alert('Failed to upload image.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // Handle profile image removal
+  const handleRemoveProfileImage = async () => {
+    if (!window.confirm('Remove your profile picture?')) return;
+    setRemoving(true);
+    try {
+      await axios.delete(`${apiUrl}/api/users/${user.id}/profile-image`);
+      setUser((prev) => ({ ...prev, profile_image_url: null }));
+      localStorage.setItem('user', JSON.stringify({ ...user, profile_image_url: null }));
+    } catch (err) {
+      alert('Failed to remove image.');
+    } finally {
+      setRemoving(false);
+    }
+  };
+
   if (loading) {
     return (
       <Container className="d-flex justify-content-center align-items-center min-vh-100">
@@ -86,8 +123,39 @@ const DashboardPage = () => {
 
   return (
     <Container className="py-4">
-      {/* Welcome Header */}
-      <Row className="mb-4">
+      {/* Profile Image Section */}
+      <Row className="mb-4 align-items-center">
+        <Col xs="auto">
+          <div style={{ position: 'relative', width: 96, height: 96 }}>
+            <img
+              src={user.profile_image_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(user.name)}
+              alt="Profile"
+              style={{ width: 96, height: 96, borderRadius: '50%', objectFit: 'cover', border: '2px solid #007bff' }}
+            />
+            <label htmlFor="profile-image-upload" style={{ position: 'absolute', bottom: 0, right: 0, background: '#007bff', borderRadius: '50%', padding: 8, cursor: 'pointer' }}>
+              <FaCamera color="#fff" />
+              <input
+                id="profile-image-upload"
+                type="file"
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={handleProfileImageChange}
+                disabled={uploading}
+              />
+            </label>
+            {user.profile_image_url && (
+              <Button
+                variant="danger"
+                size="sm"
+                style={{ position: 'absolute', top: 0, right: 0, borderRadius: '50%' }}
+                onClick={handleRemoveProfileImage}
+                disabled={removing}
+              >
+                <FaTrash />
+              </Button>
+            )}
+          </div>
+        </Col>
         <Col>
           <h1 className="mb-1">Welcome back, {user.name}! 🎓</h1>
           <p className="text-muted">{user.university}</p>

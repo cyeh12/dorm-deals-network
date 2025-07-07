@@ -124,7 +124,19 @@ app.post('/api/register', async (req, res) => {
     );
     console.log('[DEBUG] User inserted successfully');
     
-    res.status(201).json({ message: 'User registered successfully.' });
+    // Fetch the new user to get profile_image_url
+    const newUserRes = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+    const newUser = newUserRes.rows[0];
+    res.status(201).json({ 
+      message: 'User registered successfully.',
+      user: {
+        id: newUser.id,
+        name: newUser.name,
+        email: newUser.email,
+        university_id: newUser.university_id,
+        profile_image_url: newUser.profile_image_url
+      }
+    });
   } catch (err) {
     console.error('[DEBUG] Registration error:', err);
     console.error('[DEBUG] Error message:', err.message);
@@ -183,7 +195,8 @@ app.post('/api/login', async (req, res) => {
         name: user.name,
         email: user.email,
         university: universityName,
-        university_id: user.university_id
+        university_id: user.university_id,
+        profile_image_url: user.profile_image_url // Include profile image URL
       }
     });
   } catch (err) {
@@ -582,6 +595,51 @@ const ensureImageColumn = async () => {
 
 // Call the migration
 ensureImageColumn();
+
+// API route: Upload or update user profile image
+app.post('/api/users/:userId/profile-image', upload.single('image'), async (req, res) => {
+  console.log('[DEBUG] Profile image upload request received');
+  const { userId } = req.params;
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No image file provided.' });
+    }
+    const imageUrl = req.file.path;
+    // Update user profile_image_url
+    await pool.query('UPDATE users SET profile_image_url = $1 WHERE id = $2', [imageUrl, userId]);
+    res.json({ message: 'Profile image updated successfully', profile_image_url: imageUrl });
+  } catch (err) {
+    console.error('[DEBUG] Profile image upload error:', err);
+    res.status(500).json({ message: 'Error uploading profile image.' });
+  }
+});
+
+// API route: Remove user profile image
+app.delete('/api/users/:userId/profile-image', async (req, res) => {
+  console.log('[DEBUG] Profile image removal request received');
+  const { userId } = req.params;
+  try {
+    // Get current image publicId from Cloudinary URL if needed
+    const userRes = await pool.query('SELECT profile_image_url FROM users WHERE id = $1', [userId]);
+    if (userRes.rows.length === 0) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+    const imageUrl = userRes.rows[0].profile_image_url;
+    if (imageUrl) {
+      // Extract publicId from Cloudinary URL
+      const parts = imageUrl.split('/');
+      const publicIdWithExt = parts[parts.length - 1];
+      const publicId = publicIdWithExt.split('.')[0];
+      await cloudinary.uploader.destroy(`college-marketplace/${publicId}`);
+    }
+    // Remove image URL from user
+    await pool.query('UPDATE users SET profile_image_url = NULL WHERE id = $1', [userId]);
+    res.json({ message: 'Profile image removed successfully' });
+  } catch (err) {
+    console.error('[DEBUG] Profile image removal error:', err);
+    res.status(500).json({ message: 'Error removing profile image.' });
+  }
+});
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
