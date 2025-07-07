@@ -435,152 +435,6 @@ app.delete('/api/items/:itemId', async (req, res) => {
   }
 });
 
-// API route: Get single item
-app.get('/api/items/:itemId', async (req, res) => {
-  console.log('[DEBUG] Get single item request received');
-  const { itemId } = req.params;
-  
-  try {
-    console.log('[DEBUG] Fetching item:', itemId);
-    const result = await pool.query(`
-      SELECT items.*, users.name as seller_name, users.email as seller_email, 
-             universities.name as university_name, universities.domain as university_domain
-      FROM items 
-      JOIN users ON items.user_id = users.id 
-      LEFT JOIN universities ON users.university_id = universities.id
-      WHERE items.id = $1
-    `, [itemId]);
-    
-    if (result.rows.length === 0) {
-      console.log('[DEBUG] Item not found');
-      return res.status(404).json({ message: 'Item not found.' });
-    }
-    
-    console.log('[DEBUG] Item found:', result.rows[0]);
-    res.json(result.rows[0]);
-  } catch (err) {
-    console.error('[DEBUG] Get single item error:', err);
-    if (err.message.includes('relation "items" does not exist')) {
-      console.log('[DEBUG] Items table does not exist');
-      res.status(404).json({ message: 'Item not found.' });
-    } else {
-      res.status(500).json({ message: 'Server error.' });
-    }
-  }
-});
-
-// API route: Update item
-app.put('/api/items/:itemId', upload.single('image'), async (req, res) => {
-  console.log('[DEBUG] Update item request received');
-  const { itemId } = req.params;
-  const { title, description, category, price, condition, contact_method, contact_info, status } = req.body;
-  let imageUrl;
-  
-  if (!title || !description || !category || !price || !condition) {
-    console.log('[DEBUG] Missing required fields');
-    return res.status(400).json({ message: 'All required fields must be provided.' });
-  }
-  
-  try {
-    console.log('[DEBUG] Updating item:', itemId);
-    
-    // Check if item exists
-    const itemCheck = await pool.query('SELECT * FROM items WHERE id = $1', [itemId]);
-    if (itemCheck.rows.length === 0) {
-      console.log('[DEBUG] Item not found');
-      return res.status(404).json({ message: 'Item not found.' });
-    }
-    
-    // Set default contact info to user's email if not provided
-    let finalContactInfo = contact_info;
-    if (contact_method === 'email') {
-      const userCheck = await pool.query('SELECT email FROM users WHERE id = $1', [itemCheck.rows[0].user_id]);
-      if (userCheck.rows.length > 0) {
-        finalContactInfo = userCheck.rows[0].email;
-      }
-    }
-    
-    // Handle image upload
-    if (req.file) {
-      console.log('[DEBUG] Image file received for update:', req.file.originalname);
-      imageUrl = req.file.path;
-    } else {
-      console.log('[DEBUG] No image file received for update, keeping existing image');
-      imageUrl = itemCheck.rows[0].image_url; // Keep existing image if no new image
-    }
-    
-    // Update the item
-    const result = await pool.query(
-      `UPDATE items 
-       SET title = $1, description = $2, category = $3, price = $4, condition = $5, 
-           contact_method = $6, contact_info = $7, status = $8, updated_at = NOW(),
-           image_url = $9
-       WHERE id = $10 
-       RETURNING *`,
-      [title, description, category, price, condition, contact_method, finalContactInfo, status || 'active', imageUrl, itemId]
-    );
-    
-    console.log('[DEBUG] Item updated successfully:', result.rows[0]);
-    
-    res.json({
-      message: 'Item updated successfully',
-      item: result.rows[0]
-    });
-  } catch (err) {
-    console.error('[DEBUG] Update item error:', err);
-    if (err.message.includes('relation "items" does not exist')) {
-      console.log('[DEBUG] Items table does not exist');
-      res.status(404).json({ message: 'Item not found.' });
-    } else {
-      res.status(500).json({ message: 'Server error.' });
-    }
-  }
-});
-
-// Add image upload endpoint
-app.post('/api/upload-image', upload.single('image'), async (req, res) => {
-  console.log('[DEBUG] Image upload request received');
-  
-  try {
-    if (!req.file) {
-      return res.status(400).json({ message: 'No image file provided.' });
-    }
-    
-    console.log('[DEBUG] Image uploaded successfully to Cloudinary:', req.file.path);
-    
-    res.json({
-      message: 'Image uploaded successfully',
-      imageUrl: req.file.path,
-      publicId: req.file.filename
-    });
-  } catch (err) {
-    console.error('[DEBUG] Image upload error:', err);
-    res.status(500).json({ message: 'Error uploading image.' });
-  }
-});
-
-// Add image deletion endpoint
-app.delete('/api/delete-image/:publicId', async (req, res) => {
-  console.log('[DEBUG] Image deletion request received');
-  
-  try {
-    const { publicId } = req.params;
-    
-    // Delete from Cloudinary
-    const result = await cloudinary.uploader.destroy(publicId);
-    
-    console.log('[DEBUG] Image deleted from Cloudinary:', result);
-    
-    res.json({
-      message: 'Image deleted successfully',
-      result: result
-    });
-  } catch (err) {
-    console.error('[DEBUG] Image deletion error:', err);
-    res.status(500).json({ message: 'Error deleting image.' });
-  }
-});
-
 // Database migration: Add image_url column to items table if it doesn't exist
 const ensureImageColumn = async () => {
   try {
@@ -595,6 +449,21 @@ const ensureImageColumn = async () => {
 
 // Call the migration
 ensureImageColumn();
+
+// Database migration: Add views column to items table if it doesn't exist
+const ensureViewsColumn = async () => {
+  try {
+    await pool.query(`
+      ALTER TABLE items ADD COLUMN IF NOT EXISTS views INTEGER DEFAULT 0
+    `);
+    console.log('[DEBUG] Views column ensured in items table');
+  } catch (err) {
+    console.log('[DEBUG] Error ensuring views column (table might not exist yet):', err.message);
+  }
+};
+
+// Call the migration
+ensureViewsColumn();
 
 // API route: Upload or update user profile image
 app.post('/api/users/:userId/profile-image', upload.single('image'), async (req, res) => {
@@ -638,6 +507,42 @@ app.delete('/api/users/:userId/profile-image', async (req, res) => {
   } catch (err) {
     console.error('[DEBUG] Profile image removal error:', err);
     res.status(500).json({ message: 'Error removing profile image.' });
+  }
+});
+
+// API route: Get single item (increment views)
+app.get('/api/items/:itemId', async (req, res) => {
+  console.log('[DEBUG] Get single item request received');
+  const { itemId } = req.params;
+  
+  try {
+    // Increment views
+    await pool.query('UPDATE items SET views = views + 1 WHERE id = $1', [itemId]);
+    // Fetch item with updated views
+    const result = await pool.query(`
+      SELECT items.*, users.name as seller_name, users.email as seller_email, 
+             universities.name as university_name, universities.domain as university_domain
+      FROM items 
+      JOIN users ON items.user_id = users.id 
+      LEFT JOIN universities ON users.university_id = universities.id
+      WHERE items.id = $1
+    `, [itemId]);
+    
+    if (result.rows.length === 0) {
+      console.log('[DEBUG] Item not found');
+      return res.status(404).json({ message: 'Item not found.' });
+    }
+    
+    console.log('[DEBUG] Item found:', result.rows[0]);
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('[DEBUG] Get single item error:', err);
+    if (err.message.includes('relation "items" does not exist')) {
+      console.log('[DEBUG] Items table does not exist');
+      res.status(404).json({ message: 'Item not found.' });
+    } else {
+      res.status(500).json({ message: 'Server error.' });
+    }
   }
 });
 

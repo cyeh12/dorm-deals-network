@@ -34,6 +34,11 @@ const DashboardPage = () => {
     }
   }, []);
 
+  // Helper to sum total views
+  const getTotalViews = (items) => {
+    return items.reduce((sum, item) => sum + (item.views || 0), 0);
+  };
+
   const getStatusBadge = (status) => {
     switch (status) {
       case 'active':
@@ -60,7 +65,8 @@ const DashboardPage = () => {
       // Update stats
       setStats(prevStats => ({
         ...prevStats,
-        activeListings: userItemsRes.data.filter(item => item.status === 'active').length
+        activeListings: userItemsRes.data.filter(item => item.status === 'active').length,
+        totalViews: getTotalViews(userItemsRes.data)
       }));
 
     } catch (err) {
