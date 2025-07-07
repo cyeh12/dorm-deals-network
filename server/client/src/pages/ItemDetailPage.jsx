@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Button, Badge, Spinner, Alert } from 'react-bootstrap';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { FaUser, FaEnvelope, FaPhone, FaMapMarkerAlt, FaClock, FaTag, FaArrowLeft, FaEdit } from 'react-icons/fa';
+import { FaUser, FaEnvelope, FaPhone, FaMapMarkerAlt, FaClock, FaTag, FaArrowLeft, FaEdit, FaHeart, FaRegHeart } from 'react-icons/fa';
 import axios from 'axios';
 import '../styles/ItemDetailPage.css';
 
@@ -13,6 +13,8 @@ const ItemDetailPage = () => {
   const [error, setError] = useState('');
   const [user, setUser] = useState(null);
   const [relatedItems, setRelatedItems] = useState([]);
+  const [isSaved, setIsSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     // Get current user
@@ -30,6 +32,15 @@ const ItemDetailPage = () => {
       fetchRelatedItems();
     }
   }, [item]);
+
+  useEffect(() => {
+    // Check if item is saved by the user
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      const parsedUser = JSON.parse(userData);
+      checkIfSaved(parsedUser.id);
+    }
+  }, [itemId]);
 
   // Update fetchItemDetails to accept user
   const fetchItemDetails = async (currentUser) => {
@@ -95,6 +106,39 @@ const ItemDetailPage = () => {
       setRelatedItems(related);
     } catch (err) {
       console.error('Error fetching related items:', err);
+    }
+  };
+
+  const checkIfSaved = async (userId) => {
+    try {
+      const apiUrl = process.env.NODE_ENV === 'production'
+        ? 'https://college-student-marketplace-039076a3e43e.herokuapp.com'
+        : 'http://localhost:5000';
+      const res = await axios.get(`${apiUrl}/api/users/${userId}/saved-items`);
+      setIsSaved(res.data.some(i => String(i.id) === String(itemId)));
+    } catch (err) {
+      setIsSaved(false);
+    }
+  };
+
+  const handleSaveUnsave = async () => {
+    if (!user) return;
+    setSaving(true);
+    const apiUrl = process.env.NODE_ENV === 'production'
+      ? 'https://college-student-marketplace-039076a3e43e.herokuapp.com'
+      : 'http://localhost:5000';
+    try {
+      if (isSaved) {
+        await axios.delete(`${apiUrl}/api/users/${user.id}/saved-items/${itemId}`);
+        setIsSaved(false);
+      } else {
+        await axios.post(`${apiUrl}/api/users/${user.id}/saved-items/${itemId}`);
+        setIsSaved(true);
+      }
+    } catch (err) {
+      alert('Failed to update saved status.');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -203,7 +247,21 @@ const ItemDetailPage = () => {
               {/* Item Header */}
               <div className="d-flex justify-content-between align-items-start mb-3">
                 <div className="flex-grow-1">
-                  <h1 className="h2 mb-2">{item.title}</h1>
+                  <h1 className="h2 mb-2 d-flex align-items-center">
+                    {item.title}
+                    {!isOwner && user && (
+                      <Button
+                        variant="link"
+                        className="ms-2 p-0 align-middle"
+                        style={{ color: isSaved ? '#e63946' : '#aaa', fontSize: 28 }}
+                        onClick={handleSaveUnsave}
+                        disabled={saving}
+                        aria-label={isSaved ? 'Unsave item' : 'Save item'}
+                      >
+                        {isSaved ? <FaHeart /> : <FaRegHeart />}
+                      </Button>
+                    )}
+                  </h1>
                   <div className="d-flex align-items-center gap-2 mb-2">
                     <Badge bg={getConditionColor(item.condition)} className="fs-6">
                       {item.condition}

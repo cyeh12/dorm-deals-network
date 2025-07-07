@@ -34,6 +34,7 @@ const AppNavbar = () => {
                 </Nav.Link>
                 <Nav.Link as={Link} to="/my-listings">My Listings</Nav.Link>
                 <Nav.Link as={Link} to="/post-item">Post Item</Nav.Link>
+                <Nav.Link as={Link} to="/saved-items">Saved Items</Nav.Link>
                 <Button variant="outline-light" size="sm" onClick={handleLogout} className="ms-2">
                   <FaSignOutAlt className="me-1" />
                   Logout
