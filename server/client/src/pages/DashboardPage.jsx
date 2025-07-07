@@ -28,6 +28,19 @@ const DashboardPage = () => {
     }
   }, []);
 
+  const getStatusBadge = (status) => {
+    switch (status) {
+      case 'active':
+        return { bg: 'success', text: 'Active' };
+      case 'sold':
+        return { bg: 'info', text: 'Sold' };
+      case 'inactive':
+        return { bg: 'secondary', text: 'Inactive' };
+      default:
+        return { bg: 'warning', text: 'Pending' };
+    }
+  };
+
   const fetchUserData = async (userId) => {
     try {
       const apiUrl = process.env.NODE_ENV === 'production'
@@ -162,8 +175,8 @@ const DashboardPage = () => {
                         <br />
                         <small className="text-muted">${item.price}</small>
                       </div>
-                      <Badge bg={item.status === 'active' ? 'success' : 'warning'}>
-                        {item.status === 'active' ? 'Active' : 'Pending'}
+                      <Badge bg={getStatusBadge(item.status).bg}>
+                        {getStatusBadge(item.status).text}
                       </Badge>
                     </ListGroup.Item>
                   ))}
