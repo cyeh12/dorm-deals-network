@@ -19,6 +19,9 @@ const EditItemPage = () => {
     contact_info: '',
     status: 'active'
   });
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState('');
+  const [existingImageUrl, setExistingImageUrl] = useState('');
 
   useEffect(() => {
     // Check if user is logged in
@@ -56,6 +59,8 @@ const EditItemPage = () => {
         contact_info: item.contact_info || '',
         status: item.status || 'active'
       });
+      setExistingImageUrl(item.image_url || '');
+      setImagePreview(item.image_url || '');
     } catch (err) {
       console.error('[DEBUG] Error fetching item data:', err);
       setError('Failed to load item data. Please try again.');
@@ -72,6 +77,21 @@ const EditItemPage = () => {
     }));
   };
 
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setSelectedImage(file);
+    const reader = new FileReader();
+    reader.onloadend = () => setImagePreview(reader.result);
+    reader.readAsDataURL(file);
+  };
+
+  const removeImage = () => {
+    setSelectedImage(null);
+    setImagePreview('');
+    setExistingImageUrl('');
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -81,8 +101,17 @@ const EditItemPage = () => {
     }
 
     try {
+      const data = new FormData();
+      Object.entries(formData).forEach(([key, value]) => data.append(key, value));
+      if (selectedImage) {
+        data.append('image', selectedImage);
+      } else if (!imagePreview && !existingImageUrl) {
+        data.append('image', ''); // Remove image if none selected and none existing
+      }
       console.log('[DEBUG] Updating item:', itemId);
-      await axios.put(`/api/items/${itemId}`, formData);
+      await axios.put(`/api/items/${itemId}`, data, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
       console.log('[DEBUG] Item updated successfully');
       
       alert('Item updated successfully!');
@@ -124,7 +153,7 @@ const EditItemPage = () => {
         )}
 
         <div className="form-container">
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} encType="multipart/form-data">
             <div className="form-group">
               <label htmlFor="title">Title *</label>
               <input
@@ -249,6 +278,22 @@ const EditItemPage = () => {
                 />
               </div>
             )}
+
+            <div className="form-group">
+              <label>Item Image</label>
+              {imagePreview ? (
+                <div style={{ marginBottom: 8 }}>
+                  <img src={imagePreview} alt="Preview" style={{ maxWidth: 200, maxHeight: 200, borderRadius: 8 }} />
+                  <button type="button" className="btn btn-danger btn-sm ms-2" onClick={removeImage}>Remove Image</button>
+                </div>
+              ) : existingImageUrl ? (
+                <div style={{ marginBottom: 8 }}>
+                  <img src={existingImageUrl} alt="Current" style={{ maxWidth: 200, maxHeight: 200, borderRadius: 8 }} />
+                  <button type="button" className="btn btn-danger btn-sm ms-2" onClick={removeImage}>Remove Image</button>
+                </div>
+              ) : null}
+              <input type="file" accept="image/*" onChange={handleImageChange} />
+            </div>
 
             <div className="form-actions">
               <button type="submit" className="btn btn-primary">
