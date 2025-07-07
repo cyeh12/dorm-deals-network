@@ -198,6 +198,8 @@ const DashboardPage = () => {
                         <strong>{item.title}</strong>
                         <br />
                         <small className="text-muted">by {item.seller_name} • ${item.price}</small>
+                        <br />
+                        <small className="text-muted">📍 {item.university_name || 'Unknown University'}</small>
                       </div>
                       <small className="text-muted">
                         {new Date(item.created_at).toLocaleDateString()}

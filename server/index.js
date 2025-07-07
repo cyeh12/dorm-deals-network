@@ -285,9 +285,11 @@ app.get('/api/items', async (req, res) => {
   try {
     console.log('[DEBUG] Fetching all active items...');
     const result = await pool.query(`
-      SELECT items.*, users.name as seller_name, users.email as seller_email 
+      SELECT items.*, users.name as seller_name, users.email as seller_email, 
+             universities.name as university_name, universities.domain as university_domain
       FROM items 
       JOIN users ON items.user_id = users.id 
+      LEFT JOIN universities ON users.university_id = universities.id
       WHERE items.status = 'active' 
       ORDER BY items.created_at DESC
     `);
