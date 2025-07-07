@@ -10,6 +10,7 @@ import ComingSoonPage from './pages/ComingSoonPage';
 import PostItemPage from './pages/PostItemPage';
 import MyListingsPage from './pages/MyListingsPage';
 import EditItemPage from './pages/EditItemPage';
+import BrowseItemsPage from './pages/BrowseItemsPage';
 // import MarketplacePage from './pages/MarketplacePage';
 // import ItemDetailPage from './pages/ItemDetailPage';
 // import StudyGroupsPage from './pages/StudyGroupsPage';
@@ -29,11 +30,11 @@ function App() {
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/post-item" element={<PostItemPage />} />
-            <Route path="/browse" element={<ComingSoonPage feature="Browse Items" />} />
+            <Route path="/browse" element={<BrowseItemsPage />} />
             <Route path="/messages" element={<ComingSoonPage feature="Messages" />} />
             <Route path="/my-listings" element={<MyListingsPage />} />
             <Route path="/edit-item/:itemId" element={<EditItemPage />} />
-            <Route path="/marketplace" element={<ComingSoonPage feature="Marketplace" />} />
+            <Route path="/marketplace" element={<BrowseItemsPage />} />
             <Route path="/study-groups" element={<ComingSoonPage feature="Study Groups" />} />
             {/* <Route path="/marketplace" element={<MarketplacePage />} /> */}
             {/* <Route path="/items/:id" element={<ItemDetailPage />} /> */}
