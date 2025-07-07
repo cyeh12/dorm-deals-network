@@ -373,23 +373,34 @@ const ItemDetailPage = () => {
                 </p>
                 
                 {!isOwner && (
-                  <Button 
-                    variant="primary" 
-                    className="w-100 mb-2"
-                    onClick={handleContact}
-                  >
-                    {item.contact_method === 'email' ? (
-                      <>
-                        <FaEnvelope className="me-2" />
-                        Contact Seller
-                      </>
-                    ) : (
-                      <>
-                        <FaPhone className="me-2" />
-                        Contact Seller
-                      </>
-                    )}
-                  </Button>
+                  <>
+                    <Button 
+                      variant="primary" 
+                      className="w-100 mb-2"
+                      onClick={handleContact}
+                    >
+                      {item.contact_method === 'email' ? (
+                        <>
+                          <FaEnvelope className="me-2" />
+                          Contact Seller
+                        </>
+                      ) : (
+                        <>
+                          <FaPhone className="me-2" />
+                          Contact Seller
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      variant="outline-success"
+                      className="w-100 mb-2"
+                      as={Link}
+                      to={user ? `/messages?sellerId=${item.user_id}&itemId=${item.id}` : '/login'}
+                    >
+                      <FaEnvelope className="me-2" />
+                      Message Seller
+                    </Button>
+                  </>
                 )}
                 
                 {isOwner && (
