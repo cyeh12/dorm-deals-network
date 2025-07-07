@@ -27,7 +27,7 @@ const EditItemPage = () => {
     'textbooks', 'electronics', 'furniture', 'clothing', 'transportation', 'other'
   ];
   const validConditions = [
-    'new', 'like-new', 'good', 'fair', 'poor'
+    'new', 'like new', 'good', 'fair', 'poor'
   ];
 
   useEffect(() => {
@@ -58,6 +58,7 @@ const EditItemPage = () => {
       
       let category = (item.category || '').toString().trim().toLowerCase();
       let condition = (item.condition || '').toString().trim().toLowerCase();
+      if (condition === 'like-new') condition = 'like new'; // Normalize dash to space
       if (!validCategories.includes(category)) category = validCategories[0];
       if (!validConditions.includes(condition)) condition = validConditions[0];
       setFormData({
@@ -116,9 +117,8 @@ const EditItemPage = () => {
       Object.entries(formData).forEach(([key, value]) => data.append(key, value));
       if (selectedImage) {
         data.append('image', selectedImage);
-      } else if (!imagePreview && !existingImageUrl) {
-        data.append('image', ''); // Remove image if none selected and none existing
       }
+      // Do NOT append empty string for image if none selected and none existing
       console.log('[DEBUG] Updating item:', itemId);
       await axios.put(`/api/items/${itemId}`, data, {
         headers: { 'Content-Type': 'multipart/form-data' },
