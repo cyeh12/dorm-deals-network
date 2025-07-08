@@ -1,11 +1,47 @@
-import React from 'react';
-import { Container, Navbar, Nav, Button } from 'react-bootstrap';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Container, Navbar, Nav, Button, Badge } from 'react-bootstrap';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { FaUniversity, FaUser, FaSignOutAlt } from 'react-icons/fa';
+import axios from 'axios';
 
 const AppNavbar = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const user = JSON.parse(localStorage.getItem('user') || 'null');
+  const [unreadCount, setUnreadCount] = useState(0);
+  const apiUrl = process.env.NODE_ENV === 'production'
+    ? 'https://college-student-marketplace-039076a3e43e.herokuapp.com'
+    : 'http://localhost:5000';
+
+  // Fetch unread messages count
+  const fetchUnreadCount = async () => {
+    if (!user) return;
+    try {
+      const res = await axios.get(`${apiUrl}/api/users/${user.id}/unread-messages-count`);
+      setUnreadCount(res.data.count);
+    } catch (err) {
+      console.log('Error fetching unread count:', err);
+    }
+  };
+
+  // Fetch unread count on mount and when location changes
+  useEffect(() => {
+    fetchUnreadCount();
+  }, [user, location.pathname]);
+
+  // Refresh unread count when page becomes visible
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        fetchUnreadCount();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [user]);
 
   const handleLogout = () => {
     localStorage.removeItem('user');
@@ -35,7 +71,9 @@ const AppNavbar = () => {
                 <Nav.Link as={Link} to="/my-listings">My Listings</Nav.Link>
                 <Nav.Link as={Link} to="/post-item">Post Item</Nav.Link>
                 <Nav.Link as={Link} to="/saved-items">Saved Items</Nav.Link>
-                <Nav.Link as={Link} to="/messages">Messages</Nav.Link>
+                <Nav.Link as={Link} to="/messages">
+                  Messages {unreadCount > 0 && <Badge bg="danger" pill>{unreadCount}</Badge>}
+                </Nav.Link>
                 <Button variant="outline-light" size="sm" onClick={handleLogout} className="ms-2">
                   <FaSignOutAlt className="me-1" />
                   Logout

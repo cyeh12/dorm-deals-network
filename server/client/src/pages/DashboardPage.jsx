@@ -52,6 +52,59 @@ const DashboardPage = () => {
     }
   };
 
+  // Function to refresh just the stats without refetching all data
+  const refreshStats = async (userId) => {
+    try {
+      // Fetch user's items for active listings and total views
+      const userItemsRes = await axios.get(`${apiUrl}/api/users/${userId}/items`);
+      
+      // Fetch saved items count
+      let savedItemsCount = 0;
+      try {
+        const savedItemsRes = await axios.get(`${apiUrl}/api/users/${userId}/saved-items`);
+        savedItemsCount = savedItemsRes.data.length;
+      } catch (savedErr) {
+        console.log('Error fetching saved items:', savedErr);
+        savedItemsCount = 0;
+      }
+
+      // Fetch unread messages count
+      let unreadMessagesCount = 0;
+      try {
+        const unreadMessagesRes = await axios.get(`${apiUrl}/api/users/${userId}/unread-messages-count`);
+        unreadMessagesCount = unreadMessagesRes.data.count;
+      } catch (unreadErr) {
+        console.log('Error fetching unread messages count:', unreadErr);
+        unreadMessagesCount = 0;
+      }
+
+      // Update stats
+      setStats({
+        activeListings: userItemsRes.data.filter(item => item.status === 'active').length,
+        totalViews: getTotalViews(userItemsRes.data),
+        savedItems: savedItemsCount,
+        newMessages: unreadMessagesCount
+      });
+    } catch (err) {
+      console.error('Error refreshing stats:', err);
+    }
+  };
+
+  // Add event listener for when user returns to the page
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && user) {
+        // Page became visible, refresh stats
+        refreshStats(user.id);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [user]);
+
   const fetchUserData = async (userId) => {
     try {
       // Fetch user's items
@@ -72,12 +125,23 @@ const DashboardPage = () => {
         savedItemsCount = 0;
       }
 
+      // Fetch unread messages count
+      let unreadMessagesCount = 0;
+      try {
+        const unreadMessagesRes = await axios.get(`${apiUrl}/api/users/${userId}/unread-messages-count`);
+        unreadMessagesCount = unreadMessagesRes.data.count;
+      } catch (unreadErr) {
+        console.log('Error fetching unread messages count:', unreadErr);
+        unreadMessagesCount = 0;
+      }
+
       // Update stats
       setStats(prevStats => ({
         ...prevStats,
         activeListings: userItemsRes.data.filter(item => item.status === 'active').length,
         totalViews: getTotalViews(userItemsRes.data),
-        savedItems: savedItemsCount
+        savedItems: savedItemsCount,
+        newMessages: unreadMessagesCount
       }));
 
     } catch (err) {

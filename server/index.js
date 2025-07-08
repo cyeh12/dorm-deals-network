@@ -619,6 +619,25 @@ app.get('/api/messages', async (req, res) => {
   }
 });
 
+// API route: Get count of unread messages for a user
+app.get('/api/users/:userId/unread-messages-count', async (req, res) => {
+  const { userId } = req.params;
+  console.log(`[DEBUG] Fetching unread messages count for user ${userId}`);
+  try {
+    const result = await pool.query(
+      'SELECT COUNT(*) as count FROM messages WHERE receiver_id = $1 AND is_read = FALSE',
+      [userId]
+    );
+    const count = parseInt(result.rows[0].count);
+    console.log(`[DEBUG] Unread messages count for user ${userId}:`, count);
+    console.log(`[DEBUG] Query result:`, result.rows[0]);
+    res.json({ count });
+  } catch (err) {
+    console.error('[DEBUG] Get unread messages count error:', err);
+    res.status(500).json({ message: 'Error fetching unread messages count.' });
+  }
+});
+
 // API route: Mark messages as read
 app.post('/api/messages/mark-read', async (req, res) => {
   const { user_id, other_user_id, item_id } = req.body;
@@ -901,6 +920,24 @@ app.delete('/api/users/:userId/saved-items/:itemId', async (req, res) => {
   } catch (err) {
     console.error('[DEBUG] Unsave item error:', err);
     res.status(500).json({ message: 'Server error.' });
+  }
+});
+
+// API route: Add test unread messages (for demo purposes)
+app.post('/api/test/add-unread-messages', async (req, res) => {
+  try {
+    // Add a couple of test unread messages
+    // Assuming user ID 1 exists and user ID 2 exists
+    await pool.query(
+      `INSERT INTO messages (sender_id, receiver_id, item_id, content, is_read, created_at) 
+       VALUES ($1, $2, $3, $4, FALSE, NOW()), ($5, $6, $7, $8, FALSE, NOW())`,
+      [2, 1, 1, 'Hi! Is this item still available?', 3, 1, 2, 'I\'m interested in buying this. Can we meet up?']
+    );
+    console.log('[DEBUG] Test unread messages added');
+    res.json({ message: 'Test unread messages added successfully' });
+  } catch (err) {
+    console.error('[DEBUG] Error adding test messages:', err);
+    res.status(500).json({ message: 'Error adding test messages' });
   }
 });
 
