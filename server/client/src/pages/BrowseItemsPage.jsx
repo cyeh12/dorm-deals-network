@@ -55,7 +55,7 @@ const BrowseItemsPage = () => {
   const fetchItems = async () => {
     try {
       const apiUrl = process.env.NODE_ENV === 'production'
-        ? 'https://dorm-deals-network-039076a3e43e.herokuapp.com'
+        ? 'https://dorm-deals-network-1e67636e46cd.herokuapp.com'
         : 'http://localhost:5000';
 
       const response = await axios.get(`${apiUrl}/api/items`);
@@ -70,7 +70,7 @@ const BrowseItemsPage = () => {
   const fetchUniversities = async () => {
     try {
       const apiUrl = process.env.NODE_ENV === 'production'
-        ? 'https://dorm-deals-network-039076a3e43e.herokuapp.com'
+        ? 'https://dorm-deals-network-1e67636e46cd.herokuapp.com'
         : 'http://localhost:5000';
 
       const response = await axios.get(`${apiUrl}/api/universities`);

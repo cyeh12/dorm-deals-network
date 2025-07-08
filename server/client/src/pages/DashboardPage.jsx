@@ -18,7 +18,7 @@ const DashboardPage = () => {
   const [uploading, setUploading] = useState(false);
   const [removing, setRemoving] = useState(false);
   const apiUrl = process.env.NODE_ENV === 'production'
-    ? 'https://dorm-deals-network-039076a3e43e.herokuapp.com'
+    ? 'https://dorm-deals-network-1e67636e46cd.herokuapp.com'
     : 'http://localhost:5000';
 
   useEffect(() => {

@@ -33,7 +33,7 @@ const RegisterPage = () => {
 
       const apiUrl =
         process.env.NODE_ENV === 'production'
-          ? 'https://dorm-deals-network-039076a3e43e.herokuapp.com/api/register'
+          ? 'https://dorm-deals-network-1e67636e46cd.herokuapp.com/api/register'
           : 'http://localhost:5000/api/register';
 
       console.log('[DEBUG] API URL:', apiUrl);

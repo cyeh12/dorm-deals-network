@@ -5,7 +5,7 @@ import axios from 'axios';
 import { FaArrowLeft, FaPaperPlane, FaEnvelopeOpenText, FaUser, FaPhone, FaMapMarkerAlt, FaClock, FaTag } from 'react-icons/fa';
 
 const apiUrl = process.env.NODE_ENV === 'production'
-  ? 'https://dorm-deals-network-039076a3e43e.herokuapp.com'
+  ? 'https://dorm-deals-network-1e67636e46cd.herokuapp.com'
   : 'http://localhost:5000';
 
 const MessagingPage = () => {

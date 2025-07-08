@@ -23,7 +23,7 @@ const LoginPage = () => {
 
       const apiUrl =
         process.env.NODE_ENV === 'production'
-          ? 'https://dorm-deals-network-039076a3e43e.herokuapp.com/api/login'
+          ? 'https://dorm-deals-network-1e67636e46cd.herokuapp.com/api/login'
           : 'http://localhost:5000/api/login';
 
       const res = await axios.post(apiUrl, {
