@@ -338,7 +338,7 @@ app.get('/api/users/:userId', async (req, res) => {
   
   try {
     const result = await pool.query(
-      `SELECT id, name, username, email, profile_image_url, university_id
+      `SELECT id, name, email, profile_image_url, university_id
        FROM users WHERE id = $1`,
       [userId]
     );
@@ -368,7 +368,6 @@ app.get('/api/users/:userId', async (req, res) => {
     const responseData = {
       id: user.id,
       name: user.name,
-      username: user.username,
       email: user.email,
       profile_image_url: user.profile_image_url,
       university_name
