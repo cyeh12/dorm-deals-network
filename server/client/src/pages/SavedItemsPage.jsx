@@ -10,7 +10,7 @@ const SavedItemsPage = () => {
   const [error, setError] = useState('');
   const user = JSON.parse(localStorage.getItem('user'));
   const apiUrl = process.env.NODE_ENV === 'production'
-    ? 'https://college-student-marketplace-039076a3e43e.herokuapp.com'
+    ? 'https://dorm-deals-network-039076a3e43e.herokuapp.com'
     : 'http://localhost:5000';
 
   useEffect(() => {

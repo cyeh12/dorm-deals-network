@@ -10,7 +10,7 @@ const AppNavbar = () => {
   const user = JSON.parse(localStorage.getItem('user') || 'null');
   const [unreadCount, setUnreadCount] = useState(0);
   const apiUrl = process.env.NODE_ENV === 'production'
-    ? 'https://college-student-marketplace-039076a3e43e.herokuapp.com'
+    ? 'https://dorm-deals-network-039076a3e43e.herokuapp.com'
     : 'http://localhost:5000';
 
   // Fetch unread messages count

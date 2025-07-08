@@ -46,7 +46,7 @@ const ItemDetailPage = () => {
   const fetchItemDetails = async (currentUser) => {
     try {
       const apiUrl = process.env.NODE_ENV === 'production'
-        ? 'https://college-student-marketplace-039076a3e43e.herokuapp.com'
+        ? 'https://dorm-deals-network-039076a3e43e.herokuapp.com'
         : 'http://localhost:5000';
       let url = `${apiUrl}/api/items/${itemId}`;
       if (currentUser && currentUser.id) {
@@ -72,7 +72,7 @@ const ItemDetailPage = () => {
   const enrichItemWithDetails = async (itemData) => {
     try {
       const apiUrl = process.env.NODE_ENV === 'production'
-        ? 'https://college-student-marketplace-039076a3e43e.herokuapp.com'
+        ? 'https://dorm-deals-network-039076a3e43e.herokuapp.com'
         : 'http://localhost:5000';
 
       // Get all items to find this one with seller details
@@ -89,7 +89,7 @@ const ItemDetailPage = () => {
   const fetchRelatedItems = async () => {
     try {
       const apiUrl = process.env.NODE_ENV === 'production'
-        ? 'https://college-student-marketplace-039076a3e43e.herokuapp.com'
+        ? 'https://dorm-deals-network-039076a3e43e.herokuapp.com'
         : 'http://localhost:5000';
 
       const response = await axios.get(`${apiUrl}/api/items`);
@@ -112,7 +112,7 @@ const ItemDetailPage = () => {
   const checkIfSaved = async (userId) => {
     try {
       const apiUrl = process.env.NODE_ENV === 'production'
-        ? 'https://college-student-marketplace-039076a3e43e.herokuapp.com'
+        ? 'https://dorm-deals-network-039076a3e43e.herokuapp.com'
         : 'http://localhost:5000';
       const res = await axios.get(`${apiUrl}/api/users/${userId}/saved-items`);
       setIsSaved(res.data.some(i => String(i.id) === String(itemId)));
@@ -125,7 +125,7 @@ const ItemDetailPage = () => {
     if (!user) return;
     setSaving(true);
     const apiUrl = process.env.NODE_ENV === 'production'
-      ? 'https://college-student-marketplace-039076a3e43e.herokuapp.com'
+      ? 'https://dorm-deals-network-039076a3e43e.herokuapp.com'
       : 'http://localhost:5000';
     try {
       if (isSaved) {

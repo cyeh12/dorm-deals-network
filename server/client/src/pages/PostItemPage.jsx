@@ -138,7 +138,7 @@ const PostItemPage = () => {
       console.log('[DEBUG] Posting item:', formData);
       
       const apiUrl = process.env.NODE_ENV === 'production'
-        ? 'https://college-student-marketplace-039076a3e43e.herokuapp.com/api/items'
+        ? 'https://dorm-deals-network-039076a3e43e.herokuapp.com/api/items'
         : 'http://localhost:5000/api/items';
 
       // Create FormData for multipart/form-data
