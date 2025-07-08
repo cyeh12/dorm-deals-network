@@ -75,21 +75,27 @@ const MessagingPage = () => {
       let item = null;
       try {
         if (selectedConv.other_user_id) {
+          console.log('Fetching seller info for user ID:', selectedConv.other_user_id);
           // Fetch seller info directly from user endpoint
           const res = await axios.get(`${apiUrl}/api/users/${selectedConv.other_user_id}`);
+          console.log('Seller API response:', res.data);
           seller = {
             name: res.data.name || res.data.username || res.data.email || '',
             profile_image_url: res.data.profile_image_url || '',
             university_name: res.data.university_name || '',
           };
+          console.log('Processed seller info:', seller);
         }
         if (selectedConv.item_id) {
+          console.log('Fetching item info for item ID:', selectedConv.item_id);
           const res = await axios.get(`${apiUrl}/api/items/${selectedConv.item_id}`);
           item = res.data;
+          console.log('Item info:', item);
         }
       } catch (e) {
         console.log('Error fetching sidebar info:', e);
       }
+      console.log('Setting sidebar info:', { seller, item });
       setSidebarInfo({ seller, item });
     };
     fetchSidebarInfo();

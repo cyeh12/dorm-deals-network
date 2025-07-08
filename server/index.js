@@ -331,6 +331,57 @@ app.get('/api/users/:userId/items', async (req, res) => {
   }
 });
 
+// API route: Get user profile info by userId
+app.get('/api/users/:userId', async (req, res) => {
+  console.log('[DEBUG] Get user profile request received for user:', req.params.userId);
+  const { userId } = req.params;
+  
+  try {
+    const result = await pool.query(
+      `SELECT id, name, username, email, profile_image_url, university_id
+       FROM users WHERE id = $1`,
+      [userId]
+    );
+    
+    if (result.rows.length === 0) {
+      console.log('[DEBUG] User not found:', userId);
+      return res.status(404).json({ message: 'User not found.' });
+    }
+    
+    const user = result.rows[0];
+    console.log('[DEBUG] User found:', user.name);
+    
+    let university_name = '';
+    try {
+      if (user.university_id) {
+        const uniRes = await pool.query(
+          'SELECT name FROM universities WHERE id = $1',
+          [user.university_id]
+        );
+        university_name = (uniRes.rows && uniRes.rows[0] && uniRes.rows[0].name) ? uniRes.rows[0].name : '';
+      }
+    } catch (uniErr) {
+      console.log('[DEBUG] Error fetching university:', uniErr.message);
+      university_name = '';
+    }
+    
+    const responseData = {
+      id: user.id,
+      name: user.name,
+      username: user.username,
+      email: user.email,
+      profile_image_url: user.profile_image_url,
+      university_name
+    };
+    
+    console.log('[DEBUG] Sending user profile response:', responseData);
+    res.json(responseData);
+  } catch (err) {
+    console.error('[DEBUG] Get user profile error:', err);
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
 // API route: Get all items (for browse page)
 app.get('/api/items', async (req, res) => {
   console.log('[DEBUG] Get all items request received');
