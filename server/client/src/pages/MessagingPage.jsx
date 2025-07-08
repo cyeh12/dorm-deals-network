@@ -18,7 +18,7 @@ const MessagingPage = () => {
   const [loading, setLoading] = useState(true);
   const [msgLoading, setMsgLoading] = useState(false);
   const [error, setError] = useState('');
-  const [sidebarInfo, setSidebarInfo] = useState({ seller: null, item: null });
+  const [sidebarInfo, setSidebarInfo] = useState({ otherUser: null, item: null });
   const messagesEndRef = useRef(null);
   const navigate = useNavigate();
 
@@ -71,20 +71,21 @@ const MessagingPage = () => {
   useEffect(() => {
     const fetchSidebarInfo = async () => {
       if (!selectedConv) return;
-      let seller = null;
+      let otherUser = null;
       let item = null;
       try {
         if (selectedConv.other_user_id) {
-          console.log('Fetching seller info for user ID:', selectedConv.other_user_id);
-          // Fetch seller info directly from user endpoint
+          console.log('Fetching other user info for user ID:', selectedConv.other_user_id);
+          // Fetch other user info directly from user endpoint
           const res = await axios.get(`${apiUrl}/api/users/${selectedConv.other_user_id}`);
-          console.log('Seller API response:', res.data);
-          seller = {
+          console.log('Other user API response:', res.data);
+          otherUser = {
+            id: res.data.id,
             name: res.data.name || res.data.username || res.data.email || '',
             profile_image_url: res.data.profile_image_url || '',
             university_name: res.data.university_name || '',
           };
-          console.log('Processed seller info:', seller);
+          console.log('Processed other user info:', otherUser);
         }
         if (selectedConv.item_id) {
           console.log('Fetching item info for item ID:', selectedConv.item_id);
@@ -95,8 +96,8 @@ const MessagingPage = () => {
       } catch (e) {
         console.log('Error fetching sidebar info:', e);
       }
-      console.log('Setting sidebar info:', { seller, item });
-      setSidebarInfo({ seller, item });
+      console.log('Setting sidebar info:', { otherUser, item });
+      setSidebarInfo({ otherUser, item });
     };
     fetchSidebarInfo();
     // eslint-disable-next-line
@@ -204,20 +205,28 @@ const MessagingPage = () => {
               ))}
             </ListGroup>
           </Card>
-          {/* Sidebar info for seller and item */}
-          {(sidebarInfo.seller || sidebarInfo.item) && (
+          {/* Sidebar info for other user and item */}
+          {(sidebarInfo.otherUser || sidebarInfo.item) && (
             <Card className="mt-3">
               <Card.Header>Conversation Info</Card.Header>
               <Card.Body>
-                {sidebarInfo.seller && (
+                {sidebarInfo.otherUser && (
                   <div className="mb-3">
-                    <div className="fw-bold mb-1"><FaUser className="me-2" />Seller</div>
-                    {sidebarInfo.seller.profile_image_url && (
-                      <img src={sidebarInfo.seller.profile_image_url} alt="profile" width={40} height={40} className="rounded-circle mb-2 d-block" />
+                    <div className="fw-bold mb-1">
+                      <FaUser className="me-2" />
+                      {/* Determine the role based on who owns the item */}
+                      {sidebarInfo.item && sidebarInfo.item.user_id === sidebarInfo.otherUser.id 
+                        ? 'Seller' 
+                        : sidebarInfo.item && sidebarInfo.item.user_id === user.id
+                        ? 'Interested Buyer'
+                        : 'Contact'}
+                    </div>
+                    {sidebarInfo.otherUser.profile_image_url && (
+                      <img src={sidebarInfo.otherUser.profile_image_url} alt="profile" width={40} height={40} className="rounded-circle mb-2 d-block" />
                     )}
-                    <div>{sidebarInfo.seller.name}</div>
-                    {sidebarInfo.seller.university_name && (
-                      <div className="text-muted small"><FaMapMarkerAlt className="me-1" />{sidebarInfo.seller.university_name}</div>
+                    <div>{sidebarInfo.otherUser.name}</div>
+                    {sidebarInfo.otherUser.university_name && (
+                      <div className="text-muted small"><FaMapMarkerAlt className="me-1" />{sidebarInfo.otherUser.university_name}</div>
                     )}
                   </div>
                 )}
