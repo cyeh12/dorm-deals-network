@@ -62,11 +62,22 @@ const DashboardPage = () => {
       const allItemsRes = await axios.get(`${apiUrl}/api/items`);
       setRecentItems(allItemsRes.data.slice(0, 4)); // Get first 4 items
 
+      // Fetch saved items count
+      let savedItemsCount = 0;
+      try {
+        const savedItemsRes = await axios.get(`${apiUrl}/api/users/${userId}/saved-items`);
+        savedItemsCount = savedItemsRes.data.length;
+      } catch (savedErr) {
+        console.log('Error fetching saved items:', savedErr);
+        savedItemsCount = 0;
+      }
+
       // Update stats
       setStats(prevStats => ({
         ...prevStats,
         activeListings: userItemsRes.data.filter(item => item.status === 'active').length,
-        totalViews: getTotalViews(userItemsRes.data)
+        totalViews: getTotalViews(userItemsRes.data),
+        savedItems: savedItemsCount
       }));
 
     } catch (err) {
