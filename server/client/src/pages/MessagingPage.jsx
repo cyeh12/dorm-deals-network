@@ -253,7 +253,11 @@ const MessagingPage = () => {
                   )}
                   <div>
                     <div className="fw-bold">{selectedConv.other_user_name}</div>
-                    {selectedConv.item_id && <div className="small text-muted">Item #{selectedConv.item_id}</div>}
+                    {selectedConv.item_id && (
+                      <div className="small text-muted">
+                        {sidebarInfo.item?.title || 'Loading title...'}
+                      </div>
+                    )}
                   </div>
                 </div>
               </Card.Header>
