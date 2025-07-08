@@ -1,4 +1,4 @@
-# College Student Marketplace
+# Dorm Deals Network
 
 A buy/sell platform exclusively for university students to trade textbooks, dorm items, and campus services.
 

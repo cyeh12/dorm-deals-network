@@ -53,7 +53,7 @@ const AppNavbar = () => {
       <Container>
         <Navbar.Brand as={Link} to="/">
           <FaUniversity className="me-2" />
-          Campus Marketplace
+          Dorm Deals Network
         </Navbar.Brand>
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">

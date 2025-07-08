@@ -8,7 +8,7 @@ const HomePage = () => {
     <Container className="text-center py-5">
       <Row className="justify-content-center">
         <Col md={8}>
-          <h1>Welcome to the College Student Marketplace!</h1>
+          <h1>Welcome to Dorm Deals Network!</h1>
           <p className="lead mt-4">
             Buy, sell, and trade items with fellow students. Find textbooks, electronics, dorm essentials, and more—all in one place.
           </p>

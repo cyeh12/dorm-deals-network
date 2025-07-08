@@ -182,7 +182,7 @@ const ItemDetailPage = () => {
   const handleContact = () => {
     if (item.contact_method === 'email') {
       const subject = `Interest in ${item.title}`;
-      const body = `Hi ${item.seller_name},\n\nI'm interested in your listing for "${item.title}" posted on Campus Marketplace.\n\nCould you please provide more details?\n\nThanks!`;
+      const body = `Hi ${item.seller_name},\n\nI'm interested in your listing for "${item.title}" posted on Dorm Deals Network.\n\nCould you please provide more details?\n\nThanks!`;
       window.location.href = `mailto:${item.contact_info}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     } else {
       alert(`Contact ${item.seller_name} at: ${item.contact_info}`);
