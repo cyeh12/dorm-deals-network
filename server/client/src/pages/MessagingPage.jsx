@@ -75,21 +75,21 @@ const MessagingPage = () => {
       let item = null;
       try {
         if (selectedConv.other_user_id) {
-          const res = await axios.get(`${apiUrl}/api/users/${selectedConv.other_user_id}/items`);
-          // Use the first item to get seller info (name, etc.)
-          if (res.data.length > 0) {
-            seller = {
-              name: res.data[0].seller_name || '',
-              profile_image_url: res.data[0].profile_image_url || '',
-              university_name: res.data[0].university_name || '',
-            };
-          }
+          // Fetch seller info directly from user endpoint
+          const res = await axios.get(`${apiUrl}/api/users/${selectedConv.other_user_id}`);
+          seller = {
+            name: res.data.name || res.data.username || res.data.email || '',
+            profile_image_url: res.data.profile_image_url || '',
+            university_name: res.data.university_name || '',
+          };
         }
         if (selectedConv.item_id) {
           const res = await axios.get(`${apiUrl}/api/items/${selectedConv.item_id}`);
           item = res.data;
         }
-      } catch (e) {}
+      } catch (e) {
+        console.log('Error fetching sidebar info:', e);
+      }
       setSidebarInfo({ seller, item });
     };
     fetchSidebarInfo();
@@ -206,6 +206,9 @@ const MessagingPage = () => {
                 {sidebarInfo.seller && (
                   <div className="mb-3">
                     <div className="fw-bold mb-1"><FaUser className="me-2" />Seller</div>
+                    {sidebarInfo.seller.profile_image_url && (
+                      <img src={sidebarInfo.seller.profile_image_url} alt="profile" width={40} height={40} className="rounded-circle mb-2 d-block" />
+                    )}
                     <div>{sidebarInfo.seller.name}</div>
                     {sidebarInfo.seller.university_name && (
                       <div className="text-muted small"><FaMapMarkerAlt className="me-1" />{sidebarInfo.seller.university_name}</div>
