@@ -776,6 +776,32 @@ app.put('/api/items/:itemId', upload.single('image'), async (req, res) => {
   }
 });
 
+// API route: Get user's saved items
+app.get('/api/users/:userId/saved-items', async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const result = await pool.query(`
+      SELECT items.*, users.name as seller_name, users.email as seller_email, 
+             universities.name as university_name, universities.domain as university_domain
+      FROM saved_items 
+      JOIN items ON saved_items.item_id = items.id
+      JOIN users ON items.user_id = users.id 
+      LEFT JOIN universities ON users.university_id = universities.id
+      WHERE saved_items.user_id = $1 AND items.status = 'active'
+      ORDER BY saved_items.created_at DESC
+    `, [userId]);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('[DEBUG] Get saved items error:', err);
+    if (err.message.includes('relation "saved_items" does not exist')) {
+      console.log('[DEBUG] saved_items table does not exist yet');
+      res.json([]); // Return empty array if table doesn't exist
+    } else {
+      res.status(500).json({ message: 'Server error.' });
+    }
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
