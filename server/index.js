@@ -802,6 +802,58 @@ app.get('/api/users/:userId/saved-items', async (req, res) => {
   }
 });
 
+// API route: Save an item (add to saved_items)
+app.post('/api/users/:userId/saved-items/:itemId', async (req, res) => {
+  const { userId, itemId } = req.params;
+  try {
+    // Check if already saved
+    const existingResult = await pool.query(
+      'SELECT id FROM saved_items WHERE user_id = $1 AND item_id = $2',
+      [userId, itemId]
+    );
+    
+    if (existingResult.rows.length > 0) {
+      return res.status(409).json({ message: 'Item already saved.' });
+    }
+    
+    // Save the item
+    const result = await pool.query(
+      'INSERT INTO saved_items (user_id, item_id, created_at) VALUES ($1, $2, NOW()) RETURNING *',
+      [userId, itemId]
+    );
+    
+    res.status(201).json({ message: 'Item saved successfully.', savedItem: result.rows[0] });
+  } catch (err) {
+    console.error('[DEBUG] Save item error:', err);
+    if (err.message.includes('relation "saved_items" does not exist')) {
+      console.log('[DEBUG] saved_items table does not exist yet');
+      res.status(500).json({ message: 'Database not ready. Please try again.' });
+    } else {
+      res.status(500).json({ message: 'Server error.' });
+    }
+  }
+});
+
+// API route: Unsave an item (remove from saved_items)
+app.delete('/api/users/:userId/saved-items/:itemId', async (req, res) => {
+  const { userId, itemId } = req.params;
+  try {
+    const result = await pool.query(
+      'DELETE FROM saved_items WHERE user_id = $1 AND item_id = $2 RETURNING *',
+      [userId, itemId]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Saved item not found.' });
+    }
+    
+    res.json({ message: 'Item unsaved successfully.', removedItem: result.rows[0] });
+  } catch (err) {
+    console.error('[DEBUG] Unsave item error:', err);
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
