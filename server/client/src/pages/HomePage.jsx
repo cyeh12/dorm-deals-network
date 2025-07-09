@@ -8,6 +8,7 @@ const HomePage = () => {
   const navigate = useNavigate();
   const [universities, setUniversities] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showAllUniversities, setShowAllUniversities] = useState(false);
   
   const apiUrl = process.env.NODE_ENV === 'production'
     ? 'https://dorm-deals-network-1e67636e46cd.herokuapp.com'
@@ -102,38 +103,6 @@ const HomePage = () => {
         </Container>
       </div>
 
-      {/* Supported Universities Section */}
-      <Container className="py-5">
-        <Row className="text-center mb-4">
-          <Col>
-            <h2 className="display-5 fw-bold">Supported Universities</h2>
-            <p className="lead text-muted">Join students from these amazing institutions</p>
-          </Col>
-        </Row>
-        {loading ? (
-          <Row className="text-center">
-            <Col>
-              <Spinner animation="border" variant="primary" />
-              <p className="mt-2">Loading universities...</p>
-            </Col>
-          </Row>
-        ) : (
-          <Row className="justify-content-center">
-            {universities.map((university, index) => (
-              <Col md={3} sm={6} key={index} className="mb-3">
-                <Card className="h-100 border-0 shadow-sm">
-                  <Card.Body className="text-center p-3">
-                    <FaUniversity className="text-primary mb-2" size={24} />
-                    <Card.Title className="h6 mb-1">{university.name}</Card.Title>
-                    <Card.Text className="small text-muted">@{university.domain}</Card.Text>
-                  </Card.Body>
-                </Card>
-              </Col>
-            ))}
-          </Row>
-        )}
-      </Container>
-
       {/* Features Section */}
       <div className="bg-light py-5">
         <Container>
@@ -158,6 +127,52 @@ const HomePage = () => {
           </Row>
         </Container>
       </div>
+
+      {/* Supported Universities Section */}
+      <Container className="py-5">
+        <Row className="text-center mb-4">
+          <Col>
+            <h2 className="display-5 fw-bold">Supported Universities</h2>
+            <p className="lead text-muted">Join students from these amazing institutions</p>
+          </Col>
+        </Row>
+        {loading ? (
+          <Row className="text-center">
+            <Col>
+              <Spinner animation="border" variant="primary" />
+              <p className="mt-2">Loading universities...</p>
+            </Col>
+          </Row>
+        ) : (
+          <>
+            <Row className="justify-content-center">
+              {universities.slice(0, showAllUniversities ? universities.length : 4).map((university, index) => (
+                <Col md={3} sm={6} key={index} className="mb-3">
+                  <Card className="h-100 border-0 shadow-sm">
+                    <Card.Body className="text-center p-3">
+                      <FaUniversity className="text-primary mb-2" size={24} />
+                      <Card.Title className="h6 mb-1">{university.name}</Card.Title>
+                      <Card.Text className="small text-muted">@{university.domain}</Card.Text>
+                    </Card.Body>
+                  </Card>
+                </Col>
+              ))}
+            </Row>
+            {universities.length > 4 && (
+              <Row className="text-center mt-3">
+                <Col>
+                  <Button 
+                    variant="outline-primary" 
+                    onClick={() => setShowAllUniversities(!showAllUniversities)}
+                  >
+                    {showAllUniversities ? 'Show Less' : `Show All ${universities.length} Universities`}
+                  </Button>
+                </Col>
+              </Row>
+            )}
+          </>
+        )}
+      </Container>
 
       {/* Call to Action Section */}
       <Container className="py-5">
