@@ -113,14 +113,13 @@ const HomePage = () => {
               </div>
             </Col>
             <Col md={4} className="text-center d-none d-md-block">
-              <div className="bg-light bg-opacity-25 rounded-circle d-inline-flex align-items-center justify-content-center p-4" style={{ width: '200px', height: '200px' }}>
-                <img 
-                  src="/logo.ico" 
-                  alt="Dorm Deals Network Logo" 
-                  width="120" 
-                  height="120"
-                />
-              </div>
+              <img 
+                src="/HomePageBannerLogo.jpeg" 
+                alt="Dorm Deals Network Logo" 
+                width="200" 
+                height="200"
+                style={{ objectFit: 'contain' }}
+              />
             </Col>
           </Row>
         </Container>
