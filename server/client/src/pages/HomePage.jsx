@@ -1,10 +1,33 @@
-import React from 'react';
-import { Container, Row, Col, Button, Card } from 'react-bootstrap';
+import React, { useState, useEffect } from 'react';
+import { Container, Row, Col, Button, Card, Spinner } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
-import { FaBook, FaLaptop, FaShoppingBag, FaUsers, FaDollarSign, FaShieldAlt, FaSearch, FaPlus } from 'react-icons/fa';
+import { FaBook, FaLaptop, FaShoppingBag, FaUsers, FaDollarSign, FaShieldAlt, FaSearch, FaPlus, FaUniversity } from 'react-icons/fa';
+import axios from 'axios';
 
 const HomePage = () => {
   const navigate = useNavigate();
+  const [universities, setUniversities] = useState([]);
+  const [loading, setLoading] = useState(true);
+  
+  const apiUrl = process.env.NODE_ENV === 'production'
+    ? 'https://dorm-deals-network-1e67636e46cd.herokuapp.com'
+    : 'http://localhost:5000';
+
+  // Fetch universities on component mount
+  useEffect(() => {
+    const fetchUniversities = async () => {
+      try {
+        const response = await axios.get(`${apiUrl}/api/universities`);
+        setUniversities(response.data);
+      } catch (error) {
+        console.error('Error fetching universities:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUniversities();
+  }, []);
   
   const features = [
     {
@@ -37,13 +60,6 @@ const HomePage = () => {
       title: "Safe & Secure",
       description: "Trade safely with verified university students in your local area."
     }
-  ];
-
-  const stats = [
-    { number: "1000+", label: "Items Listed" },
-    { number: "500+", label: "Active Students" },
-    { number: "50+", label: "Universities" },
-    { number: "$10k+", label: "Money Saved" }
   ];
 
   return (
@@ -86,16 +102,36 @@ const HomePage = () => {
         </Container>
       </div>
 
-      {/* Stats Section */}
+      {/* Supported Universities Section */}
       <Container className="py-5">
-        <Row className="text-center">
-          {stats.map((stat, index) => (
-            <Col md={3} key={index} className="mb-4">
-              <h2 className="display-4 fw-bold text-primary">{stat.number}</h2>
-              <p className="text-muted">{stat.label}</p>
-            </Col>
-          ))}
+        <Row className="text-center mb-4">
+          <Col>
+            <h2 className="display-5 fw-bold">Supported Universities</h2>
+            <p className="lead text-muted">Join students from these amazing institutions</p>
+          </Col>
         </Row>
+        {loading ? (
+          <Row className="text-center">
+            <Col>
+              <Spinner animation="border" variant="primary" />
+              <p className="mt-2">Loading universities...</p>
+            </Col>
+          </Row>
+        ) : (
+          <Row className="justify-content-center">
+            {universities.map((university, index) => (
+              <Col md={3} sm={6} key={index} className="mb-3">
+                <Card className="h-100 border-0 shadow-sm">
+                  <Card.Body className="text-center p-3">
+                    <FaUniversity className="text-primary mb-2" size={24} />
+                    <Card.Title className="h6 mb-1">{university.name}</Card.Title>
+                    <Card.Text className="small text-muted">@{university.domain}</Card.Text>
+                  </Card.Body>
+                </Card>
+              </Col>
+            ))}
+          </Row>
+        )}
       </Container>
 
       {/* Features Section */}
