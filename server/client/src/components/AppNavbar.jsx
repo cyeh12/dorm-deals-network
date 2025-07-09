@@ -52,7 +52,13 @@ const AppNavbar = () => {
     <Navbar bg="primary" variant="dark" expand="lg" sticky="top">
       <Container>
         <Navbar.Brand as={Link} to="/">
-          <FaUniversity className="me-2" />
+          <img
+            src="/public/logo.ico"
+            alt="Dorm Deals Network Logo"
+            width="30"
+            height="30"
+            className="d-inline-block align-top me-2"
+          />
           Dorm Deals Network
         </Navbar.Brand>
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
