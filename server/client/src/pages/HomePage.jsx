@@ -119,7 +119,6 @@ const HomePage = () => {
                   alt="Dorm Deals Network Logo" 
                   width="120" 
                   height="120"
-                  style={{ filter: 'brightness(0) invert(1)' }}
                 />
               </div>
             </Col>
