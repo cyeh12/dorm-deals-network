@@ -66,10 +66,28 @@ const HomePage = () => {
   return (
     <div>
       {/* Hero Section */}
-      <div className="bg-primary text-white py-5">
-        <Container>
-          <Row className="align-items-center">
-            <Col md={6}>
+      <div 
+        className="text-white py-5 position-relative"
+        style={{
+          backgroundImage: 'url(/banner.jpg)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+          minHeight: '500px'
+        }}
+      >
+        {/* Dark overlay for better text readability */}
+        <div 
+          className="position-absolute top-0 start-0 w-100 h-100"
+          style={{
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            zIndex: 1
+          }}
+        ></div>
+        
+        <Container className="position-relative" style={{ zIndex: 2 }}>
+          <Row className="align-items-center" style={{ minHeight: '400px' }}>
+            <Col md={8}>
               <h1 className="display-4 fw-bold">Welcome to Dorm Deals Network!</h1>
               <p className="lead mt-3">
                 The premier marketplace for college students to buy, sell, and trade items safely within their university community.
@@ -94,9 +112,9 @@ const HomePage = () => {
                 </Button>
               </div>
             </Col>
-            <Col md={6} className="text-center">
-              <div className="bg-light text-dark rounded-circle d-inline-flex align-items-center justify-content-center" style={{ width: '200px', height: '200px' }}>
-                <FaUsers size={80} className="text-primary" />
+            <Col md={4} className="text-center d-none d-md-block">
+              <div className="bg-light bg-opacity-25 text-white rounded-circle d-inline-flex align-items-center justify-content-center" style={{ width: '200px', height: '200px' }}>
+                <FaUsers size={80} />
               </div>
             </Col>
           </Row>
