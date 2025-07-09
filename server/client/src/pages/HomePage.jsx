@@ -113,8 +113,14 @@ const HomePage = () => {
               </div>
             </Col>
             <Col md={4} className="text-center d-none d-md-block">
-              <div className="bg-light bg-opacity-25 text-white rounded-circle d-inline-flex align-items-center justify-content-center" style={{ width: '200px', height: '200px' }}>
-                <FaUsers size={80} />
+              <div className="bg-light bg-opacity-25 rounded-circle d-inline-flex align-items-center justify-content-center p-4" style={{ width: '200px', height: '200px' }}>
+                <img 
+                  src="/logo.ico" 
+                  alt="Dorm Deals Network Logo" 
+                  width="120" 
+                  height="120"
+                  style={{ filter: 'brightness(0) invert(1)' }}
+                />
               </div>
             </Col>
           </Row>
