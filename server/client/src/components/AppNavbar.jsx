@@ -53,7 +53,7 @@ const AppNavbar = () => {
       <Container>
         <Navbar.Brand as={Link} to="/">
           <img
-            src="/public/logo.ico"
+            src="/logo.ico"
             alt="Dorm Deals Network Logo"
             width="30"
             height="30"
