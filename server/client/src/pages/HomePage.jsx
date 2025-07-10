@@ -66,12 +66,12 @@ const HomePage = () => {
   return (
     <div>
       {/* Academic Project Banner */}
-      <div className="text-dark py-3" style={{ backgroundColor: '#cfe2ff' }}>
+      <div className="bg-primary text-white py-3">
         <Container>
           <Row className="text-center align-items-center">
             <Col md={8}>
               <strong>
-                <span style={{ color: '#dc3545', fontWeight: 'bold' }}>Illinois Tech</span> X Coursera | ITMD 504 - Programming and Application Foundations
+                <span style={{ color: '#dc3545', fontWeight: 'bold' }}>Illinois Tech</span> | ITMD 504 - Programming and Application Foundations
               </strong>
             </Col>
             <Col md={4}>
