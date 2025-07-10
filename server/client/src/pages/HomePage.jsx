@@ -100,8 +100,8 @@ const HomePage = () => {
         ></div>
         
         <Container className="position-relative" style={{ zIndex: 2 }}>
-          <Row className="align-items-center" style={{ minHeight: '400px' }}>
-            <Col md={8}>
+          <Row className="align-items-center justify-content-center" style={{ minHeight: '400px' }}>
+            <Col md={8} className="text-center">
               <h1 className="display-4 fw-bold">Welcome to Dorm Deals Network!</h1>
               <p className="lead mt-3">
                 The premier marketplace for college students to buy, sell, and trade items safely within their university community.
@@ -125,15 +125,6 @@ const HomePage = () => {
                   Sell Your Items
                 </Button>
               </div>
-            </Col>
-            <Col md={4} className="text-center d-none d-md-block">
-              <img 
-                src="/HomePageBannerLogo.jpeg" 
-                alt="Dorm Deals Network Logo" 
-                width="200" 
-                height="200"
-                style={{ objectFit: 'contain' }}
-              />
             </Col>
           </Row>
         </Container>
