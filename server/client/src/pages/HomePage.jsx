@@ -65,6 +65,20 @@ const HomePage = () => {
 
   return (
     <div>
+      {/* Summer Deals Banner */}
+      <div className="bg-warning text-dark py-2">
+        <Container>
+          <Row className="text-center">
+            <Col md={6}>
+              <strong>🌞 Up to 70% Off Summer Items!</strong>
+            </Col>
+            <Col md={6}>
+              <strong>📚 Buy 2, Get 1 Free on Textbooks!</strong>
+            </Col>
+          </Row>
+        </Container>
+      </div>
+
       {/* Hero Section */}
       <div 
         className="text-white py-5 position-relative"
