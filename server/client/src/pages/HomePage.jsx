@@ -65,15 +65,15 @@ const HomePage = () => {
 
   return (
     <div>
-      {/* Summer Deals Banner */}
-      <div className="bg-warning text-dark py-2">
+      {/* Academic Project Banner */}
+      <div className="bg-primary text-white py-3">
         <Container>
-          <Row className="text-center">
-            <Col md={6}>
-              <strong>🌞 Up to 70% Off Summer Items!</strong>
+          <Row className="text-center align-items-center">
+            <Col md={8}>
+              <strong>� ITMD 504 - Programming and Application Foundations</strong>
             </Col>
-            <Col md={6}>
-              <strong>📚 Buy 2, Get 1 Free on Textbooks!</strong>
+            <Col md={4}>
+              <small>Summative Course Assessment</small>
             </Col>
           </Row>
         </Container>
