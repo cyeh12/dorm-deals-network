@@ -140,7 +140,7 @@ const HomePage = () => {
       </div>
 
       {/* Features Section */}
-      <div className="bg-light py-5">
+      <div className="py-5">
         <Container>
           <Row className="text-center mb-5">
             <Col>
@@ -165,7 +165,7 @@ const HomePage = () => {
       </div>
 
       {/* Supported Universities Section */}
-      <Container className="py-5">
+      <Container className="bg-light py-5">
         <Row className="text-center mb-4">
           <Col>
             <h2 className="display-5 fw-bold">Supported Universities</h2>
