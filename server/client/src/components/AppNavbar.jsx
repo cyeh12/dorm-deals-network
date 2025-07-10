@@ -52,14 +52,16 @@ const AppNavbar = () => {
     <Navbar bg="dark" variant="dark" expand="lg" sticky="top">
       <Container>
         <Navbar.Brand as={Link} to="/">
-          <img
-            src="/logo.ico"
-            alt="Dorm Deals Network Logo"
-            width="30"
-            height="30"
-            className="d-inline-block align-top me-2"
-          />
-          Dorm Deals Network
+          <span className="bg-secondary px-2 py-1 rounded d-inline-flex align-items-center">
+            <img
+              src="/logo.ico"
+              alt="Dorm Deals Network Logo"
+              width="30"
+              height="30"
+              className="d-inline-block align-top me-2"
+            />
+            <span className="fw-bold text-white">Dorm Deals Network</span>
+          </span>
         </Navbar.Brand>
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
