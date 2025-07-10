@@ -71,7 +71,7 @@ const AppNavbar = () => {
             {user ? (
               <>
                 <Nav.Link as={Link} to="/dashboard">
-                  {user.name}/'s Dashboard
+                  {user.name}'s Dashboard
                 </Nav.Link>
                 <Nav.Link as={Link} to="/my-listings">My Listings</Nav.Link>
                 <Nav.Link as={Link} to="/post-item">Post Item</Nav.Link>
