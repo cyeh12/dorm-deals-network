@@ -52,7 +52,7 @@ const AppNavbar = () => {
     <Navbar bg="dark" variant="dark" expand="lg" sticky="top">
       <Container>
         <Navbar.Brand as={Link} to="/">
-          <span className="bg-secondary px-2 py-1 rounded d-inline-flex align-items-center">
+          <span className="bg-white px-2 py-1 rounded d-inline-flex align-items-center">
             <img
               src="/logo.ico"
               alt="Dorm Deals Network Logo"
@@ -60,7 +60,7 @@ const AppNavbar = () => {
               height="30"
               className="d-inline-block align-top me-2"
             />
-            <span className="fw-bold text-white">Dorm Deals Network</span>
+            <span className="fw-bold text-black">Dorm Deals Network</span>
           </span>
         </Navbar.Brand>
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
