@@ -165,50 +165,52 @@ const HomePage = () => {
       </div>
 
       {/* Supported Universities Section */}
-      <Container className="bg-light py-5">
-        <Row className="text-center mb-4">
-          <Col>
-            <h2 className="display-5 fw-bold">Supported Universities</h2>
-            <p className="lead text-muted">Join students from these amazing institutions</p>
-          </Col>
-        </Row>
-        {loading ? (
-          <Row className="text-center">
+      <div className="bg-light py-5">
+        <Container>
+          <Row className="text-center mb-4">
             <Col>
-              <Spinner animation="border" variant="primary" />
-              <p className="mt-2">Loading universities...</p>
+              <h2 className="display-5 fw-bold">Supported Universities</h2>
+              <p className="lead text-muted">Join students from these amazing institutions</p>
             </Col>
           </Row>
-        ) : (
-          <>
-            <Row className="justify-content-center">
-              {universities.slice(0, showAllUniversities ? universities.length : 4).map((university, index) => (
-                <Col md={3} sm={6} key={index} className="mb-3">
-                  <Card className="h-100 border-0 shadow-sm">
-                    <Card.Body className="text-center p-3">
-                      <FaUniversity className="text-primary mb-2" size={24} />
-                      <Card.Title className="h6 mb-1">{university.name}</Card.Title>
-                      <Card.Text className="small text-muted">@{university.domain}</Card.Text>
-                    </Card.Body>
-                  </Card>
-                </Col>
-              ))}
+          {loading ? (
+            <Row className="text-center">
+              <Col>
+                <Spinner animation="border" variant="primary" />
+                <p className="mt-2">Loading universities...</p>
+              </Col>
             </Row>
-            {universities.length > 4 && (
-              <Row className="text-center mt-3">
-                <Col>
-                  <Button 
-                    variant="outline-primary" 
-                    onClick={() => setShowAllUniversities(!showAllUniversities)}
-                  >
-                    {showAllUniversities ? 'Show Less' : `Show All ${universities.length} Universities`}
-                  </Button>
-                </Col>
+          ) : (
+            <>
+              <Row className="justify-content-center">
+                {universities.slice(0, showAllUniversities ? universities.length : 4).map((university, index) => (
+                  <Col md={3} sm={6} key={index} className="mb-3">
+                    <Card className="h-100 border-0 shadow-sm">
+                      <Card.Body className="text-center p-3">
+                        <FaUniversity className="text-primary mb-2" size={24} />
+                        <Card.Title className="h6 mb-1">{university.name}</Card.Title>
+                        <Card.Text className="small text-muted">@{university.domain}</Card.Text>
+                      </Card.Body>
+                    </Card>
+                  </Col>
+                ))}
               </Row>
-            )}
-          </>
-        )}
-      </Container>
+              {universities.length > 4 && (
+                <Row className="text-center mt-3">
+                  <Col>
+                    <Button 
+                      variant="outline-primary" 
+                      onClick={() => setShowAllUniversities(!showAllUniversities)}
+                    >
+                      {showAllUniversities ? 'Show Less' : `Show All ${universities.length} Universities`}
+                    </Button>
+                  </Col>
+                </Row>
+              )}
+            </>
+          )}
+        </Container>
+      </div>
 
       {/* Call to Action Section */}
       <Container className="py-5">
