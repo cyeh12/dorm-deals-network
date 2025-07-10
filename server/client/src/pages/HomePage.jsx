@@ -70,7 +70,9 @@ const HomePage = () => {
         <Container>
           <Row className="text-center align-items-center">
             <Col md={8}>
-              <strong>� ITMD 504 - Programming and Application Foundations</strong>
+              <strong>
+                <span style={{ color: '#dc3545', fontWeight: 'bold' }}>Illinois Tech</span> MS IT | ITMD 504 - Programming and Application Foundations
+              </strong>
             </Col>
             <Col md={4}>
               <small>Summative Course Assessment</small>
