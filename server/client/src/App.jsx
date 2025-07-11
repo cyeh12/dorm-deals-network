@@ -14,8 +14,8 @@ import BrowseItemsPage from './pages/BrowseItemsPage';
 import ItemDetailPage from './pages/ItemDetailPage';
 import SavedItemsPage from './pages/SavedItemsPage';
 import MessagingPage from './pages/MessagingPage';
+import StudyGroupsPage from './pages/StudyGroupsPage';
 // import MarketplacePage from './pages/MarketplacePage';
-// import StudyGroupsPage from './pages/StudyGroupsPage';
 // import UserDashboardPage from './pages/UserDashboardPage';
 import Footer from './components/Footer';
 import './App.css';
@@ -38,7 +38,7 @@ function App() {
             <Route path="/edit-item/:itemId" element={<EditItemPage />} />
             <Route path="/items/:itemId" element={<ItemDetailPage />} />
             <Route path="/marketplace" element={<BrowseItemsPage />} />
-            <Route path="/study-groups" element={<ComingSoonPage feature="Study Groups" />} />
+            <Route path="/study-groups" element={<StudyGroupsPage />} />
             <Route path="/saved-items" element={<SavedItemsPage />} />
             {/* <Route path="/marketplace" element={<MarketplacePage />} /> */}
             {/* <Route path="/items/:id" element={<ItemDetailPage />} /> */}

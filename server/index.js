@@ -941,6 +941,292 @@ app.post('/api/test/add-unread-messages', async (req, res) => {
   }
 });
 
+// Study Groups API Endpoints
+
+// Get all study groups
+app.get('/api/study-groups', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT 
+        sg.*,
+        u.name as creator_name,
+        COUNT(m.user_id) as member_count
+      FROM study_groups sg
+      LEFT JOIN users u ON sg.created_by = u.id
+      LEFT JOIN study_group_members m ON sg.id = m.group_id
+      WHERE sg.is_active = true
+      GROUP BY sg.id, u.name
+      ORDER BY sg.created_at DESC
+    `);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching study groups:', error);
+    if (error.message.includes('relation "study_groups" does not exist')) {
+      console.log('[DEBUG] Study groups table does not exist yet');
+      res.json([]); // Return empty array if table doesn't exist
+    } else {
+      res.status(500).json({ message: 'Error fetching study groups' });
+    }
+  }
+});
+
+// Get user's study groups
+app.get('/api/study-groups/my-groups/:userId', async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const result = await pool.query(`
+      SELECT 
+        sg.*,
+        u.name as creator_name,
+        COUNT(m.user_id) as member_count
+      FROM study_groups sg
+      LEFT JOIN users u ON sg.created_by = u.id
+      LEFT JOIN study_group_members m ON sg.id = m.group_id
+      WHERE sg.id IN (
+        SELECT group_id FROM study_group_members WHERE user_id = $1
+      ) AND sg.is_active = true
+      GROUP BY sg.id, u.name
+      ORDER BY sg.created_at DESC
+    `, [userId]);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching user study groups:', error);
+    if (error.message.includes('relation "study_groups" does not exist') || 
+        error.message.includes('relation "study_group_members" does not exist')) {
+      console.log('[DEBUG] Study groups tables do not exist yet');
+      res.json([]); // Return empty array if tables don't exist
+    } else {
+      res.status(500).json({ message: 'Error fetching user study groups' });
+    }
+  }
+});
+
+// Create a new study group
+app.post('/api/study-groups', async (req, res) => {
+  const { name, subject, description, location, max_members, schedule, creator_id } = req.body;
+  
+  try {
+    // Insert the study group
+    const groupResult = await pool.query(`
+      INSERT INTO study_groups (name, subject, description, location, max_members, schedule, created_by)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      RETURNING *
+    `, [name, subject, description, location, max_members, schedule, creator_id]);
+
+    const groupId = groupResult.rows[0].id;
+
+    // Add the creator as the first member
+    await pool.query(`
+      INSERT INTO study_group_members (group_id, user_id, joined_at)
+      VALUES ($1, $2, NOW())
+    `, [groupId, creator_id]);
+
+    res.status(201).json(groupResult.rows[0]);
+  } catch (error) {
+    console.error('Error creating study group:', error);
+    if (error.message.includes('relation "study_groups" does not exist')) {
+      console.log('[DEBUG] Study groups table does not exist, creating it...');
+      try {
+        // Create tables
+        await pool.query(`
+          CREATE TABLE IF NOT EXISTS study_groups (
+            id SERIAL PRIMARY KEY,
+            name VARCHAR(255) NOT NULL,
+            subject VARCHAR(100) NOT NULL,
+            description TEXT,
+            location VARCHAR(255),
+            max_members INTEGER DEFAULT 8,
+            schedule VARCHAR(255),
+            created_by INTEGER REFERENCES users(id) ON DELETE CASCADE,
+            is_active BOOLEAN DEFAULT true,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          )
+        `);
+
+        await pool.query(`
+          CREATE TABLE IF NOT EXISTS study_group_members (
+            id SERIAL PRIMARY KEY,
+            group_id INTEGER REFERENCES study_groups(id) ON DELETE CASCADE,
+            user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+            joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(group_id, user_id)
+          )
+        `);
+        
+        console.log('[DEBUG] Study groups tables created successfully');
+        
+        // Retry the insert
+        const retryGroupResult = await pool.query(`
+          INSERT INTO study_groups (name, subject, description, location, max_members, schedule, created_by)
+          VALUES ($1, $2, $3, $4, $5, $6, $7)
+          RETURNING *
+        `, [name, subject, description, location, max_members, schedule, creator_id]);
+
+        const retryGroupId = retryGroupResult.rows[0].id;
+
+        // Add the creator as the first member
+        await pool.query(`
+          INSERT INTO study_group_members (group_id, user_id, joined_at)
+          VALUES ($1, $2, NOW())
+        `, [retryGroupId, creator_id]);
+
+        res.status(201).json(retryGroupResult.rows[0]);
+      } catch (createErr) {
+        console.error('[DEBUG] Error creating tables or inserting:', createErr);
+        res.status(500).json({ message: 'Database error. Please try again.' });
+      }
+    } else {
+      res.status(500).json({ message: 'Error creating study group' });
+    }
+  }
+});
+
+// Join a study group
+app.post('/api/study-groups/:groupId/join', async (req, res) => {
+  const { groupId } = req.params;
+  const { user_id } = req.body;
+
+  try {
+    // Check if user is already a member
+    const existingMember = await pool.query(`
+      SELECT * FROM study_group_members WHERE group_id = $1 AND user_id = $2
+    `, [groupId, user_id]);
+
+    if (existingMember.rows.length > 0) {
+      return res.status(400).json({ message: 'You are already a member of this group' });
+    }
+
+    // Check if group is full
+    const groupInfo = await pool.query(`
+      SELECT sg.max_members, COUNT(sgm.user_id) as current_members
+      FROM study_groups sg
+      LEFT JOIN study_group_members sgm ON sg.id = sgm.group_id
+      WHERE sg.id = $1
+      GROUP BY sg.id, sg.max_members
+    `, [groupId]);
+
+    if (groupInfo.rows.length === 0) {
+      return res.status(404).json({ message: 'Study group not found' });
+    }
+
+    const { max_members, current_members } = groupInfo.rows[0];
+    if (parseInt(current_members) >= max_members) {
+      return res.status(400).json({ message: 'This study group is full' });
+    }
+
+    // Add user to the group
+    await pool.query(`
+      INSERT INTO study_group_members (group_id, user_id, joined_at)
+      VALUES ($1, $2, NOW())
+    `, [groupId, user_id]);
+
+    res.json({ message: 'Successfully joined the study group' });
+  } catch (error) {
+    console.error('Error joining study group:', error);
+    res.status(500).json({ message: 'Error joining study group' });
+  }
+});
+
+// Leave a study group
+app.post('/api/study-groups/:groupId/leave', async (req, res) => {
+  const { groupId } = req.params;
+  const { user_id } = req.body;
+
+  try {
+    // Remove user from the group
+    const result = await pool.query(`
+      DELETE FROM study_group_members WHERE group_id = $1 AND user_id = $2
+    `, [groupId, user_id]);
+
+    if (result.rowCount === 0) {
+      return res.status(400).json({ message: 'You are not a member of this group' });
+    }
+
+    res.json({ message: 'Successfully left the study group' });
+  } catch (error) {
+    console.error('Error leaving study group:', error);
+    res.status(500).json({ message: 'Error leaving study group' });
+  }
+});
+
+// Delete a study group (only creator can delete)
+app.delete('/api/study-groups/:groupId', async (req, res) => {
+  const { groupId } = req.params;
+  const { user_id } = req.body;
+
+  try {
+    // Check if user is the creator
+    const group = await pool.query(`
+      SELECT * FROM study_groups WHERE id = $1 AND created_by = $2
+    `, [groupId, user_id]);
+
+    if (group.rows.length === 0) {
+      return res.status(403).json({ message: 'Only the group creator can delete this group' });
+    }
+
+    // Soft delete the group
+    await pool.query(`
+      UPDATE study_groups SET is_active = false WHERE id = $1
+    `, [groupId]);
+
+    res.json({ message: 'Study group deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting study group:', error);
+    res.status(500).json({ message: 'Error deleting study group' });
+  }
+});
+
+// Database migration: Add study groups tables if they don't exist
+const ensureStudyGroupsTables = async () => {
+  try {
+    // Create study_groups table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS study_groups (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        subject VARCHAR(100) NOT NULL,
+        description TEXT,
+        location VARCHAR(255),
+        max_members INTEGER DEFAULT 10,
+        meeting_time TIMESTAMP,
+        is_virtual BOOLEAN DEFAULT false,
+        created_by INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        university VARCHAR(255),
+        is_active BOOLEAN DEFAULT true,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Create study_group_members table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS study_group_members (
+        id SERIAL PRIMARY KEY,
+        group_id INTEGER REFERENCES study_groups(id) ON DELETE CASCADE,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(group_id, user_id)
+      )
+    `);
+
+    // Create indexes
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_study_groups_subject ON study_groups(subject)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_study_groups_university ON study_groups(university)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_study_groups_created_by ON study_groups(created_by)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_study_groups_is_active ON study_groups(is_active)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_study_group_members_group_id ON study_group_members(group_id)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_study_group_members_user_id ON study_group_members(user_id)`);
+
+    console.log('[DEBUG] study_groups tables ensured');
+  } catch (err) {
+    console.log('[DEBUG] Error ensuring study_groups tables:', err.message);
+  }
+};
+
+// Call the migration
+ensureStudyGroupsTables();
+
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
