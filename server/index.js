@@ -1208,6 +1208,18 @@ const ensureStudyGroupsTables = async () => {
       )
     `);
 
+    // Add missing columns to existing tables (for production migration)
+    try {
+      await pool.query(`ALTER TABLE study_groups ADD COLUMN schedule VARCHAR(255)`);
+      console.log('[DEBUG] Added schedule column to study_groups table');
+    } catch (scheduleErr) {
+      if (scheduleErr.message.includes('already exists')) {
+        console.log('[DEBUG] schedule column already exists in study_groups table');
+      } else {
+        console.log('[DEBUG] Error adding schedule column:', scheduleErr.message);
+      }
+    }
+    
     // Create indexes
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_study_groups_subject ON study_groups(subject)`);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_study_groups_created_by ON study_groups(created_by)`);
