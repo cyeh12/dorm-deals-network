@@ -11,11 +11,18 @@ const StudyGroupsPage = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [connectionError, setConnectionError] = useState(false);
+  const [lastRequestTime, setLastRequestTime] = useState(0);
+  const [retryCount, setRetryCount] = useState(0);
   
   const user = JSON.parse(localStorage.getItem('user') || 'null');
   const apiUrl = process.env.NODE_ENV === 'production'
     ? 'https://dorm-deals-network-1e67636e46cd.herokuapp.com'
     : 'http://localhost:5000';
+
+  // Request throttling - minimum 2 seconds between requests
+  const MIN_REQUEST_INTERVAL = 2000;
+  const MAX_RETRIES = 3;
 
   // Form state for creating new group
   const [formData, setFormData] = useState({
@@ -28,30 +35,79 @@ const StudyGroupsPage = () => {
   });
 
   useEffect(() => {
-    fetchStudyGroups();
-    if (user) {
-      fetchMyGroups();
+    // Prevent infinite loops by throttling requests
+    const now = Date.now();
+    if (now - lastRequestTime < MIN_REQUEST_INTERVAL) {
+      console.log('Request throttled - waiting for cooldown');
+      return;
     }
-  }, [user]);
+
+    // Don't retry if we've exceeded max retries and have a connection error
+    if (connectionError && retryCount >= MAX_RETRIES) {
+      console.log('Max retries exceeded - not attempting new request');
+      setLoading(false);
+      return;
+    }
+
+    setLastRequestTime(now);
+    
+    const loadData = async () => {
+      try {
+        setConnectionError(false);
+        await fetchStudyGroups();
+        if (user) {
+          await fetchMyGroups();
+        }
+        setRetryCount(0); // Reset retry count on success
+      } catch (error) {
+        console.error('Error in useEffect loadData:', error);
+        setConnectionError(true);
+        setRetryCount(prev => prev + 1);
+      }
+    };
+
+    loadData();
+  }, []); // Remove user dependency to prevent infinite loops
 
   const fetchStudyGroups = async () => {
     try {
-      const response = await axios.get(`${apiUrl}/api/study-groups`);
+      setError(''); // Clear previous errors
+      const response = await axios.get(`${apiUrl}/api/study-groups`, {
+        timeout: 10000 // 10 second timeout
+      });
       setStudyGroups(response.data);
+      setConnectionError(false);
     } catch (error) {
       console.error('Error fetching study groups:', error);
-      setError('Failed to load study groups');
+      
+      if (error.code === 'ECONNREFUSED' || error.code === 'NETWORK_ERROR' || !error.response) {
+        setConnectionError(true);
+        setError('Unable to connect to server. Please check if the backend is running.');
+      } else {
+        setError('Failed to load study groups');
+      }
+      
+      // Don't throw the error to prevent useEffect from re-triggering
     } finally {
       setLoading(false);
     }
   };
 
   const fetchMyGroups = async () => {
+    if (!user) return;
+    
     try {
-      const response = await axios.get(`${apiUrl}/api/study-groups/my-groups/${user.id}`);
+      const response = await axios.get(`${apiUrl}/api/study-groups/my-groups/${user.id}`, {
+        timeout: 10000 // 10 second timeout
+      });
       setMyGroups(response.data);
     } catch (error) {
       console.error('Error fetching my groups:', error);
+      
+      if (error.code === 'ECONNREFUSED' || error.code === 'NETWORK_ERROR' || !error.response) {
+        setConnectionError(true);
+      }
+      // Don't set error state for my groups to avoid UI confusion
     }
   };
 
@@ -68,7 +124,9 @@ const StudyGroupsPage = () => {
         creator_id: user.id
       };
       
-      await axios.post(`${apiUrl}/api/study-groups`, groupData);
+      await axios.post(`${apiUrl}/api/study-groups`, groupData, {
+        timeout: 10000
+      });
       setSuccess('Study group created successfully!');
       setShowCreateModal(false);
       setFormData({
@@ -80,15 +138,22 @@ const StudyGroupsPage = () => {
         max_members: 8
       });
       
-      // Refresh the lists
-      fetchStudyGroups();
-      fetchMyGroups();
+      // Refresh the lists only if not in connection error state
+      if (!connectionError) {
+        fetchStudyGroups();
+        if (user) fetchMyGroups();
+      }
       
       // Clear success message after 3 seconds
       setTimeout(() => setSuccess(''), 3000);
     } catch (error) {
       console.error('Error creating study group:', error);
-      setError('Failed to create study group');
+      if (error.code === 'ECONNREFUSED' || error.code === 'NETWORK_ERROR' || !error.response) {
+        setConnectionError(true);
+        setError('Unable to connect to server. Please try again later.');
+      } else {
+        setError('Failed to create study group');
+      }
     }
   };
 
@@ -99,18 +164,25 @@ const StudyGroupsPage = () => {
     }
 
     try {
-      await axios.post(`${apiUrl}/api/study-groups/${groupId}/join`, { user_id: user.id });
+      await axios.post(`${apiUrl}/api/study-groups/${groupId}/join`, { user_id: user.id }, {
+        timeout: 10000
+      });
       setSuccess('Successfully joined the study group!');
       
-      // Refresh the lists
-      fetchStudyGroups();
-      fetchMyGroups();
+      // Refresh the lists only if not in connection error state
+      if (!connectionError) {
+        fetchStudyGroups();
+        if (user) fetchMyGroups();
+      }
       
       // Clear success message after 3 seconds
       setTimeout(() => setSuccess(''), 3000);
     } catch (error) {
       console.error('Error joining study group:', error);
-      if (error.response?.status === 400) {
+      if (error.code === 'ECONNREFUSED' || error.code === 'NETWORK_ERROR' || !error.response) {
+        setConnectionError(true);
+        setError('Unable to connect to server. Please try again later.');
+      } else if (error.response?.status === 400) {
         setError(error.response.data.message || 'Unable to join study group');
       } else {
         setError('Failed to join study group');
@@ -125,18 +197,27 @@ const StudyGroupsPage = () => {
     }
 
     try {
-      await axios.post(`${apiUrl}/api/study-groups/${groupId}/leave`, { user_id: user.id });
+      await axios.post(`${apiUrl}/api/study-groups/${groupId}/leave`, { user_id: user.id }, {
+        timeout: 10000
+      });
       setSuccess('Successfully left the study group!');
       
-      // Refresh the lists
-      fetchStudyGroups();
-      fetchMyGroups();
+      // Refresh the lists only if not in connection error state
+      if (!connectionError) {
+        fetchStudyGroups();
+        if (user) fetchMyGroups();
+      }
       
       // Clear success message after 3 seconds
       setTimeout(() => setSuccess(''), 3000);
     } catch (error) {
       console.error('Error leaving study group:', error);
-      setError('Failed to leave study group');
+      if (error.code === 'ECONNREFUSED' || error.code === 'NETWORK_ERROR' || !error.response) {
+        setConnectionError(true);
+        setError('Unable to connect to server. Please try again later.');
+      } else {
+        setError('Failed to leave study group');
+      }
     }
   };
 
@@ -152,19 +233,25 @@ const StudyGroupsPage = () => {
 
     try {
       await axios.delete(`${apiUrl}/api/study-groups/${groupId}`, {
-        data: { user_id: user.id }
+        data: { user_id: user.id },
+        timeout: 10000
       });
       setSuccess('Study group deleted successfully!');
       
-      // Refresh the lists
-      fetchStudyGroups();
-      fetchMyGroups();
+      // Refresh the lists only if not in connection error state
+      if (!connectionError) {
+        fetchStudyGroups();
+        if (user) fetchMyGroups();
+      }
       
       // Clear success message after 3 seconds
       setTimeout(() => setSuccess(''), 3000);
     } catch (error) {
       console.error('Error deleting study group:', error);
-      if (error.response?.status === 403) {
+      if (error.code === 'ECONNREFUSED' || error.code === 'NETWORK_ERROR' || !error.response) {
+        setConnectionError(true);
+        setError('Unable to connect to server. Please try again later.');
+      } else if (error.response?.status === 403) {
         setError('Only the group creator can delete this group');
       } else {
         setError('Failed to delete study group');
@@ -282,6 +369,31 @@ const StudyGroupsPage = () => {
           {error && (
             <Alert variant="danger" dismissible onClose={() => setError('')}>
               {error}
+            </Alert>
+          )}
+
+          {connectionError && (
+            <Alert variant="warning" className="d-flex justify-content-between align-items-center">
+              <div>
+                <strong>Connection Error:</strong> Unable to connect to the server. 
+                {process.env.NODE_ENV === 'development' && (
+                  <span> Make sure the backend server is running on port 5000.</span>
+                )}
+              </div>
+              <Button 
+                variant="outline-warning" 
+                size="sm" 
+                onClick={() => {
+                  setConnectionError(false);
+                  setRetryCount(0);
+                  setLastRequestTime(0);
+                  setLoading(true);
+                  fetchStudyGroups();
+                  if (user) fetchMyGroups();
+                }}
+              >
+                Retry
+              </Button>
             </Alert>
           )}
 
