@@ -1188,11 +1188,9 @@ const ensureStudyGroupsTables = async () => {
         subject VARCHAR(100) NOT NULL,
         description TEXT,
         location VARCHAR(255),
-        max_members INTEGER DEFAULT 10,
-        meeting_time TIMESTAMP,
-        is_virtual BOOLEAN DEFAULT false,
+        max_members INTEGER DEFAULT 8,
+        schedule VARCHAR(255),
         created_by INTEGER REFERENCES users(id) ON DELETE CASCADE,
-        university VARCHAR(255),
         is_active BOOLEAN DEFAULT true,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -1212,7 +1210,6 @@ const ensureStudyGroupsTables = async () => {
 
     // Create indexes
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_study_groups_subject ON study_groups(subject)`);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_study_groups_university ON study_groups(university)`);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_study_groups_created_by ON study_groups(created_by)`);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_study_groups_is_active ON study_groups(is_active)`);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_study_group_members_group_id ON study_group_members(group_id)`);
