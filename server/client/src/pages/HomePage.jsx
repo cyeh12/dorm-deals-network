@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Button, Card, Spinner } from 'react-bootstrap';
+import { Container, Row, Col, Button, Card, Spinner, Carousel } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
-import { FaBook, FaLaptop, FaShoppingBag, FaUsers, FaDollarSign, FaShieldAlt, FaSearch, FaPlus, FaUniversity } from 'react-icons/fa';
+import { FaBook, FaLaptop, FaShoppingBag, FaUsers, FaDollarSign, FaShieldAlt, FaSearch, FaPlus, FaUniversity, FaComments, FaHeart, FaUserCheck } from 'react-icons/fa';
 import axios from 'axios';
 
 const HomePage = () => {
@@ -32,34 +32,67 @@ const HomePage = () => {
   
   const features = [
     {
-      icon: <FaBook className="text-primary" size={48} />,
-      title: "Textbooks & Study Materials",
-      description: "Find affordable textbooks, study guides, and course materials from fellow students."
+      icon: <FaSearch className="text-primary" size={48} />,
+      title: "Browse Marketplace",
+      description: "Explore thousands of items from textbooks to electronics, all organized by category and university."
     },
     {
-      icon: <FaLaptop className="text-success" size={48} />,
-      title: "Electronics & Tech",
-      description: "Discover laptops, tablets, headphones, and other tech essentials at student prices."
+      icon: <FaHeart className="text-danger" size={48} />,
+      title: "Save Favorites",
+      description: "Save items you're interested in and get notified when prices drop or similar items are posted."
     },
     {
-      icon: <FaShoppingBag className="text-warning" size={48} />,
-      title: "Dorm Essentials",
-      description: "Get furniture, appliances, and dorm decor to make your space feel like home."
+      icon: <FaUserCheck className="text-success" size={48} />,
+      title: "Verified Sellers",
+      description: "View detailed seller profiles with ratings, university verification, and transaction history."
     },
     {
-      icon: <FaUsers className="text-info" size={48} />,
-      title: "Student Community",
-      description: "Connect with students from your university and build lasting relationships."
+      icon: <FaComments className="text-info" size={48} />,
+      title: "Direct Messaging",
+      description: "Chat directly with buyers and sellers to negotiate prices and arrange safe meetups."
     },
     {
-      icon: <FaDollarSign className="text-success" size={48} />,
-      title: "Budget-Friendly",
-      description: "Save money and earn cash by buying and selling within your student community."
+      icon: <FaUsers className="text-warning" size={48} />,
+      title: "Study Groups",
+      description: "Join or create study groups for your courses and connect with classmates for academic success."
     },
     {
-      icon: <FaShieldAlt className="text-danger" size={48} />,
-      title: "Safe & Secure",
-      description: "Trade safely with verified university students in your local area."
+      icon: <FaShieldAlt className="text-secondary" size={48} />,
+      title: "Item Details",
+      description: "Get comprehensive information about every item including photos, condition, and seller details."
+    }
+  ];
+
+  const carouselItems = [
+    {
+      image: "/screenshots/marketplace-browse.png",
+      title: "Browse Marketplace",
+      description: "Discover items by category, filter by university, and find exactly what you need"
+    },
+    {
+      image: "/screenshots/saved-items-page.png",
+      title: "Save Your Favorites",
+      description: "Keep track of items you're interested in with our favorites system"
+    },
+    {
+      image: "/screenshots/seller-profile.png",
+      title: "Trusted Seller Profiles",
+      description: "View seller ratings, university verification, and previous listings"
+    },
+    {
+      image: "/screenshots/messaging_interface.png",
+      title: "Direct Communication",
+      description: "Chat with buyers and sellers to negotiate and coordinate transactions"
+    },
+    {
+      image: "/screenshots/study-groups-page.png",
+      title: "Academic Communities",
+      description: "Join study groups and collaborate with classmates in your courses"
+    },
+    {
+      image: "/screenshots/item-detail-page.png",
+      title: "Detailed Item Information",
+      description: "Get all the details you need including photos, condition, and seller info"
     }
   ];
 
@@ -137,8 +170,8 @@ const HomePage = () => {
         <Container>
           <Row className="text-center mb-5">
             <Col>
-              <h2 className="display-5 fw-bold">Why Choose Dorm Deals Network?</h2>
-              <p className="lead text-muted">Everything you need for college life, right at your fingertips</p>
+              <h2 className="display-5 fw-bold">Explore Our Platform Features</h2>
+              <p className="lead text-muted">See how Dorm Deals Network makes buying and selling simple and safe</p>
             </Col>
           </Row>
           <Row>
@@ -153,6 +186,33 @@ const HomePage = () => {
                 </Card>
               </Col>
             ))}
+          </Row>
+          
+          {/* Screenshots Carousel */}
+          <Row className="mt-5">
+            <Col>
+              <h3 className="text-center mb-4">See It In Action</h3>
+              <Carousel className="shadow-lg rounded" indicators={true} controls={true}>
+                {carouselItems.map((item, index) => (
+                  <Carousel.Item key={index}>
+                    <img
+                      className="d-block w-100 rounded"
+                      src={item.image}
+                      alt={item.title}
+                      style={{ 
+                        height: '500px', 
+                        objectFit: 'contain',
+                        backgroundColor: '#f8f9fa'
+                      }}
+                    />
+                    <Carousel.Caption className="bg-dark bg-opacity-75 rounded p-3">
+                      <h5 className="fw-bold">{item.title}</h5>
+                      <p className="mb-0">{item.description}</p>
+                    </Carousel.Caption>
+                  </Carousel.Item>
+                ))}
+              </Carousel>
+            </Col>
           </Row>
         </Container>
       </div>
