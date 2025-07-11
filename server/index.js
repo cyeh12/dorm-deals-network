@@ -1004,14 +1004,14 @@ app.get('/api/study-groups/my-groups/:userId', async (req, res) => {
 // Create a new study group
 app.post('/api/study-groups', async (req, res) => {
   const { name, subject, description, location, max_members, schedule, creator_id } = req.body;
-  
+  const created_by = creator_id; // Map frontend field to DB field
   try {
     // Insert the study group
     const groupResult = await pool.query(`
       INSERT INTO study_groups (name, subject, description, location, max_members, schedule, created_by)
       VALUES ($1, $2, $3, $4, $5, $6, $7)
       RETURNING *
-    `, [name, subject, description, location, max_members, schedule, creator_id]);
+    `, [name, subject, description, location, max_members, schedule, created_by]);
 
     const groupId = groupResult.rows[0].id;
 
@@ -1019,7 +1019,7 @@ app.post('/api/study-groups', async (req, res) => {
     await pool.query(`
       INSERT INTO study_group_members (group_id, user_id, joined_at)
       VALUES ($1, $2, NOW())
-    `, [groupId, creator_id]);
+    `, [groupId, created_by]);
 
     res.status(201).json(groupResult.rows[0]);
   } catch (error) {
@@ -1061,7 +1061,7 @@ app.post('/api/study-groups', async (req, res) => {
           INSERT INTO study_groups (name, subject, description, location, max_members, schedule, created_by)
           VALUES ($1, $2, $3, $4, $5, $6, $7)
           RETURNING *
-        `, [name, subject, description, location, max_members, schedule, creator_id]);
+        `, [name, subject, description, location, max_members, schedule, created_by]);
 
         const retryGroupId = retryGroupResult.rows[0].id;
 
@@ -1069,7 +1069,7 @@ app.post('/api/study-groups', async (req, res) => {
         await pool.query(`
           INSERT INTO study_group_members (group_id, user_id, joined_at)
           VALUES ($1, $2, NOW())
-        `, [retryGroupId, creator_id]);
+        `, [retryGroupId, created_by]);
 
         res.status(201).json(retryGroupResult.rows[0]);
       } catch (createErr) {
