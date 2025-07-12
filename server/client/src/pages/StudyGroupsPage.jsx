@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Button, Badge, Nav, Tab, Modal, Form, Alert, Spinner } from 'react-bootstrap';
+import { useNavigate } from 'react-router-dom';
 import { FaUsers, FaPlus, FaCalendar, FaMapMarkerAlt, FaUser, FaEdit, FaTrash } from 'react-icons/fa';
 import axios from 'axios';
 
 const StudyGroupsPage = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('browse');
   const [studyGroups, setStudyGroups] = useState([]);
   const [myGroups, setMyGroups] = useState([]);
@@ -442,7 +444,15 @@ const StudyGroupsPage = () => {
 
           {!user && (
             <Alert variant="info">
-              Please <a href="/login">log in</a> to create or join study groups.
+              Please{' '}
+              <Button 
+                variant="link" 
+                className="p-0 align-baseline text-decoration-underline"
+                onClick={() => navigate('/login')}
+              >
+                log in
+              </Button>{' '}
+              to create or join study groups.
             </Alert>
           )}
 
