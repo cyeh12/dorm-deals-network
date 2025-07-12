@@ -218,8 +218,26 @@ const HomePage = () => {
       </div>
 
       {/* Supported Universities Section */}
-      <div className="bg-light py-5">
-        <Container>
+      <div 
+        className="py-5 position-relative"
+        style={{
+          backgroundImage: 'url(/BackgroundForUniversities.jpg)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+          minHeight: '400px'
+        }}
+      >
+        {/* Dark overlay for better text readability */}
+        <div 
+          className="position-absolute top-0 start-0 w-100 h-100"
+          style={{
+            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+            zIndex: 1
+          }}
+        ></div>
+        
+        <Container className="position-relative" style={{ zIndex: 2 }}>
           <Row className="text-center mb-4">
             <Col>
               <h2 className="display-5 fw-bold">Supported Universities</h2>
