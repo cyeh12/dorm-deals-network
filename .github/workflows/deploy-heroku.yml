@@ -1,0 +1,44 @@
+name: Deploy to Heroku
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: |
+          cd server/client && npm ci
+          cd ../.. && npm ci
+
+      # Optional: run tests here if you have them
+      # - name: Run tests
+      #   run: npm test
+
+      - name: Install Heroku CLI
+        run: |
+          curl https://cli-assets.heroku.com/install.sh | sh
+
+      - name: Deploy to Heroku
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+          HEROKU_APP_NAME: ${{ secrets.HEROKU_APP_NAME }}
+          HEROKU_EMAIL: ${{ secrets.HEROKU_EMAIL }}
+        run: |
+          heroku git:remote -a "$HEROKU_APP_NAME"
+          git config --global user.email "$HEROKU_EMAIL"
+          git config --global user.name "GitHub Actions"
+          echo "machine api.heroku.com\n  login $HEROKU_EMAIL\n  password $HEROKU_API_KEY" > ~/.netrc
+          echo "machine git.heroku.com\n  login $HEROKU_EMAIL\n  password $HEROKU_API_KEY" >> ~/.netrc
+          git push heroku HEAD:main --force
