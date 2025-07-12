@@ -26,26 +26,9 @@ jobs:
       # - name: Run tests
       #   run: npm test
 
-      - name: Install Heroku CLI
-        run: |
-          curl https://cli-assets.heroku.com/install.sh | sh
-
-      - name: Set up Heroku authentication
-        env:
-          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
-          HEROKU_EMAIL: ${{ secrets.HEROKU_EMAIL }}
-        run: |
-          echo "machine api.heroku.com\n  login $HEROKU_EMAIL\n  password $HEROKU_API_KEY" > ~/.netrc
-          echo "machine git.heroku.com\n  login $HEROKU_EMAIL\n  password $HEROKU_API_KEY" >> ~/.netrc
-
       - name: Deploy to Heroku
-        env:
-          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
-          HEROKU_APP_NAME: ${{ secrets.HEROKU_APP_NAME }}
-          HEROKU_EMAIL: ${{ secrets.HEROKU_EMAIL }}
-        run: |
-          heroku git:remote -a "$HEROKU_APP_NAME"
-          git config --global user.email "$HEROKU_EMAIL"
-          git config --global user.name "GitHub Actions"
-          heroku auth:whoami
-          git push heroku HEAD:master --force
+        uses: akhileshns/heroku-deploy@v3.12.14
+        with:
+          heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
+          heroku_app_name: ${{ secrets.HEROKU_APP_NAME }}
+          heroku_email: ${{ secrets.HEROKU_EMAIL }}
