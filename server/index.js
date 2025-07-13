@@ -1387,15 +1387,15 @@ app.post('/api/study-groups', async (req, res) => {
 });
 
 // Join a study group
-app.post('/api/study-groups/:groupId/join', async (req, res) => {
+app.post('/api/study-groups/:groupId/join', authenticateToken, async (req, res) => {
   const { groupId } = req.params;
-  const { user_id } = req.body;
+  const userId = req.user.userId;
 
   try {
     // Check if user is already a member
     const existingMember = await pool.query(`
       SELECT * FROM study_group_members WHERE group_id = $1 AND user_id = $2
-    `, [groupId, user_id]);
+    `, [groupId, userId]);
 
     if (existingMember.rows.length > 0) {
       return res.status(400).json({ message: 'You are already a member of this group' });
@@ -1423,7 +1423,7 @@ app.post('/api/study-groups/:groupId/join', async (req, res) => {
     await pool.query(`
       INSERT INTO study_group_members (group_id, user_id, joined_at)
       VALUES ($1, $2, NOW())
-    `, [groupId, user_id]);
+    `, [groupId, userId]);
 
     res.json({ message: 'Successfully joined the study group' });
   } catch (error) {
@@ -1433,15 +1433,15 @@ app.post('/api/study-groups/:groupId/join', async (req, res) => {
 });
 
 // Leave a study group
-app.post('/api/study-groups/:groupId/leave', async (req, res) => {
+app.post('/api/study-groups/:groupId/leave', authenticateToken, async (req, res) => {
   const { groupId } = req.params;
-  const { user_id } = req.body;
+  const userId = req.user.userId;
 
   try {
     // Remove user from the group
     const result = await pool.query(`
       DELETE FROM study_group_members WHERE group_id = $1 AND user_id = $2
-    `, [groupId, user_id]);
+    `, [groupId, userId]);
 
     if (result.rowCount === 0) {
       return res.status(400).json({ message: 'You are not a member of this group' });
@@ -1455,15 +1455,15 @@ app.post('/api/study-groups/:groupId/leave', async (req, res) => {
 });
 
 // Delete a study group (only creator can delete)
-app.delete('/api/study-groups/:groupId', async (req, res) => {
+app.delete('/api/study-groups/:groupId', authenticateToken, async (req, res) => {
   const { groupId } = req.params;
-  const { user_id } = req.body;
+  const userId = req.user.userId;
 
   try {
     // Check if user is the creator
     const group = await pool.query(`
       SELECT * FROM study_groups WHERE id = $1 AND created_by = $2
-    `, [groupId, user_id]);
+    `, [groupId, userId]);
 
     if (group.rows.length === 0) {
       return res.status(403).json({ message: 'Only the group creator can delete this group' });
@@ -1539,6 +1539,31 @@ const ensureStudyGroupsTables = async () => {
 
 // Call the migration
 ensureStudyGroupsTables();
+
+// API route: Get current user's study groups
+app.get('/api/my-study-groups', authenticateToken, async (req, res) => {
+  const userId = req.user.userId;
+  try {
+    const result = await pool.query(`
+      SELECT 
+        sg.*,
+        u.name as creator_name,
+        COUNT(m.user_id) as member_count
+      FROM study_groups sg
+      LEFT JOIN users u ON sg.created_by = u.id
+      LEFT JOIN study_group_members m ON sg.id = m.group_id
+      WHERE sg.id IN (
+        SELECT group_id FROM study_group_members WHERE user_id = $1
+      ) AND sg.is_active = true
+      GROUP BY sg.id, u.name
+      ORDER BY sg.created_at DESC
+    `, [userId]);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Get my study groups error:', err);
+    res.status(500).json({ message: 'Error fetching your study groups.' });
+  }
+});
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

@@ -93,7 +93,7 @@ const DashboardPage = () => {
     const handleVisibilityChange = () => {
       if (!document.hidden && user) {
         // Page became visible, refresh stats
-        refreshStats(user.id);
+        fetchUserData();
       }
     };
 
@@ -118,7 +118,7 @@ const DashboardPage = () => {
       // Fetch saved items count
       let savedItemsCount = 0;
       try {
-        const savedItemsRes = await axios.get(`/api/users/${authUser.id}/saved-items`);
+        const savedItemsRes = await axios.get('/api/my-saved-items');
         savedItemsCount = savedItemsRes.data.length;
       } catch (savedErr) {
         console.log('Error fetching saved items:', savedErr);
@@ -132,14 +132,7 @@ const DashboardPage = () => {
         unreadMessagesCount = unreadMessagesRes.data.count;
       } catch (unreadErr) {
         console.log('Error fetching unread messages count:', unreadErr);
-        // Try fallback endpoint
-        try {
-          const fallbackRes = await axios.get(`/api/users/${authUser.id}/unread-messages-count`);
-          unreadMessagesCount = fallbackRes.data.count;
-        } catch (fallbackErr) {
-          console.log('Fallback also failed:', fallbackErr);
-          unreadMessagesCount = 0;
-        }
+        unreadMessagesCount = 0;
       }
 
       // Update stats

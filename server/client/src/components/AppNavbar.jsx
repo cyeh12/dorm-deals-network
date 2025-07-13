@@ -19,13 +19,7 @@ const AppNavbar = () => {
       setUnreadCount(res.data.count);
     } catch (err) {
       console.log('Error fetching unread count:', err);
-      // Try fallback endpoint
-      try {
-        const fallbackRes = await axios.get(`/api/users/${user.id}/unread-messages-count`);
-        setUnreadCount(fallbackRes.data.count);
-      } catch (fallbackErr) {
-        console.log('Fallback also failed:', fallbackErr);
-      }
+      setUnreadCount(0);
     }
   };
 

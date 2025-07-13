@@ -114,7 +114,7 @@ const StudyGroupsPage = () => {
     if (!user) return;
     
     try {
-      const response = await axios.get(`${apiUrl}/api/study-groups/my-groups/${user.id}`, {
+      const response = await axios.get(`${apiUrl}/api/my-study-groups`, {
         timeout: REQUEST_TIMEOUT
       });
       setMyGroups(response.data);
