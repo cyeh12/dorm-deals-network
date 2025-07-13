@@ -3,13 +3,14 @@ import { Container, Row, Col, Card, Button, Form, Spinner, Alert, ListGroup, Inp
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { FaArrowLeft, FaPaperPlane, FaEnvelopeOpenText, FaUser, FaPhone, FaMapMarkerAlt, FaClock, FaTag } from 'react-icons/fa';
+import { useAuth } from '../context/AuthContext';
 
 const apiUrl = process.env.NODE_ENV === 'production'
   ? 'https://dorm-deals-network-1e67636e46cd.herokuapp.com'
   : 'http://localhost:5000';
 
 const MessagingPage = () => {
-  const user = JSON.parse(localStorage.getItem('user'));
+  const { user } = useAuth();
   const location = useLocation();
   const [conversations, setConversations] = useState([]);
   const [selectedConv, setSelectedConv] = useState(null);
@@ -106,7 +107,7 @@ const MessagingPage = () => {
   const fetchConversations = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${apiUrl}/api/users/${user.id}/conversations`);
+      const res = await axios.get(`${apiUrl}/api/my-conversations`);
       setConversations(res.data);
     } catch (err) {
       setError('Failed to load conversations.');
@@ -118,13 +119,12 @@ const MessagingPage = () => {
   const fetchMessages = async (otherUserId, itemId) => {
     setMsgLoading(true);
     try {
-      const params = { user1: user.id, user2: otherUserId };
+      const params = { user2: otherUserId };
       if (itemId) params.item_id = itemId;
       const res = await axios.get(`${apiUrl}/api/messages`, { params });
       setMessages(res.data);
       // Mark as read
       await axios.post(`${apiUrl}/api/messages/mark-read`, {
-        user_id: user.id,
         other_user_id: otherUserId,
         item_id: itemId
       });
@@ -140,7 +140,6 @@ const MessagingPage = () => {
     if (!messageText.trim() || !selectedConv) return;
     try {
       await axios.post(`${apiUrl}/api/messages`, {
-        sender_id: user.id,
         receiver_id: selectedConv.other_user_id,
         item_id: selectedConv.item_id,
         content: messageText.trim()

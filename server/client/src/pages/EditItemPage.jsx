@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
 import '../styles/EditItemPage.css';
 
 const EditItemPage = () => {
   const { itemId } = useParams();
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
@@ -32,16 +33,13 @@ const EditItemPage = () => {
 
   useEffect(() => {
     // Check if user is logged in
-    const userData = localStorage.getItem('user');
-    if (!userData) {
+    if (!user) {
       navigate('/login');
       return;
     }
 
-    const parsedUser = JSON.parse(userData);
-    setUser(parsedUser);
     fetchItemData(itemId);
-  }, [navigate, itemId]);
+  }, [navigate, itemId, user]);
 
   const fetchItemData = async (id) => {
     try {
@@ -50,8 +48,7 @@ const EditItemPage = () => {
       const item = response.data;
       
       // Check if current user owns this item
-      const userData = JSON.parse(localStorage.getItem('user'));
-      if (item.user_id !== userData.id) {
+      if (item.user_id !== user.id) {
         setError('You can only edit your own items.');
         return;
       }

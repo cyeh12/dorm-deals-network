@@ -1,17 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Form, Button, Container, Row, Col, Card } from 'react-bootstrap';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
 
 const LoginPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { login, isAuthenticated, loading: authLoading } = useAuth();
   const successMessage = location.state?.successMessage;
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated && !authLoading) {
+      navigate('/dashboard');
+    }
+  }, [isAuthenticated, authLoading, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -21,26 +29,18 @@ const LoginPage = () => {
     try {
       console.log('[DEBUG] Login attempt for:', email);
 
-      const apiUrl =
-        process.env.NODE_ENV === 'production'
-          ? 'https://dorm-deals-network-1e67636e46cd.herokuapp.com/api/login'
-          : 'http://localhost:5000/api/login';
-
-      const res = await axios.post(apiUrl, {
-        email,
-        password,
-      });
-
-      console.log('[DEBUG] Login successful:', res.data);
-
-      // Store user data in localStorage (simple auth)
-      localStorage.setItem('user', JSON.stringify(res.data.user));
-
-      // Redirect to dashboard
-      navigate('/dashboard');
+      const result = await login(email, password);
+      
+      if (result.success) {
+        console.log('[DEBUG] Login successful:', result.user);
+        // Navigate to dashboard - will be handled by useEffect above
+        navigate('/dashboard');
+      } else {
+        setError(result.error);
+      }
     } catch (err) {
       console.error('[DEBUG] Login error:', err);
-      setError(err.response?.data?.message || 'Login failed. Please try again.');
+      setError('Login failed. Please try again.');
     } finally {
       setLoading(false);
     }

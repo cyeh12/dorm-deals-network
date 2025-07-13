@@ -3,6 +3,7 @@ import { Container, Row, Col, Card, Button, Badge, Nav, Tab, Modal, Form, Alert,
 import { useNavigate } from 'react-router-dom';
 import { FaUsers, FaPlus, FaCalendar, FaMapMarkerAlt, FaUser, FaEdit, FaTrash } from 'react-icons/fa';
 import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
 
 const StudyGroupsPage = () => {
   const navigate = useNavigate();
@@ -18,7 +19,7 @@ const StudyGroupsPage = () => {
   const [retryCount, setRetryCount] = useState(0);
   const [isWakingUp, setIsWakingUp] = useState(false);
   
-  const user = JSON.parse(localStorage.getItem('user') || 'null');
+  const { user } = useAuth();
   const apiUrl = process.env.NODE_ENV === 'production'
     ? 'https://dorm-deals-network-1e67636e46cd.herokuapp.com'
     : 'http://localhost:5000';
@@ -183,7 +184,7 @@ const StudyGroupsPage = () => {
     }
 
     try {
-      await axios.post(`${apiUrl}/api/study-groups/${groupId}/join`, { user_id: user.id }, {
+      await axios.post(`${apiUrl}/api/study-groups/${groupId}/join`, {}, {
         timeout: REQUEST_TIMEOUT
       });
       setSuccess('Successfully joined the study group!');
@@ -219,7 +220,7 @@ const StudyGroupsPage = () => {
     }
 
     try {
-      await axios.post(`${apiUrl}/api/study-groups/${groupId}/leave`, { user_id: user.id }, {
+      await axios.post(`${apiUrl}/api/study-groups/${groupId}/leave`, {}, {
         timeout: REQUEST_TIMEOUT
       });
       setSuccess('Successfully left the study group!');
@@ -258,7 +259,6 @@ const StudyGroupsPage = () => {
 
     try {
       await axios.delete(`${apiUrl}/api/study-groups/${groupId}`, {
-        data: { user_id: user.id },
         timeout: REQUEST_TIMEOUT
       });
       setSuccess('Study group deleted successfully!');

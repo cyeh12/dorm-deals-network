@@ -3,6 +3,7 @@ import { Container, Row, Col, Card, Button, Badge, Spinner, Alert } from 'react-
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { FaUser, FaEnvelope, FaPhone, FaMapMarkerAlt, FaClock, FaTag, FaArrowLeft, FaEdit, FaHeart, FaRegHeart, FaComments } from 'react-icons/fa';
 import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
 import '../styles/ItemDetailPage.css';
 
 const ItemDetailPage = () => {
@@ -11,20 +12,13 @@ const ItemDetailPage = () => {
   const [item, setItem] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [relatedItems, setRelatedItems] = useState([]);
   const [isSaved, setIsSaved] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    // Get current user
-    const userData = localStorage.getItem('user');
-    let parsedUser = null;
-    if (userData) {
-      parsedUser = JSON.parse(userData);
-      setUser(parsedUser);
-    }
-    fetchItemDetails(parsedUser);
+    fetchItemDetails();
   }, [itemId]);
 
   useEffect(() => {
@@ -35,15 +29,13 @@ const ItemDetailPage = () => {
 
   useEffect(() => {
     // Check if item is saved by the user
-    const userData = localStorage.getItem('user');
-    if (userData) {
-      const parsedUser = JSON.parse(userData);
-      checkIfSaved(parsedUser.id);
+    if (user) {
+      checkIfSaved();
     }
-  }, [itemId]);
+  }, [itemId, user]);
 
   // Update fetchItemDetails to accept user
-  const fetchItemDetails = async (currentUser) => {
+  const fetchItemDetails = async () => {
     try {
       const apiUrl = process.env.NODE_ENV === 'production'
         ? 'https://dorm-deals-network-1e67636e46cd.herokuapp.com'
@@ -109,12 +101,12 @@ const ItemDetailPage = () => {
     }
   };
 
-  const checkIfSaved = async (userId) => {
+  const checkIfSaved = async () => {
     try {
       const apiUrl = process.env.NODE_ENV === 'production'
         ? 'https://dorm-deals-network-1e67636e46cd.herokuapp.com'
         : 'http://localhost:5000';
-      const res = await axios.get(`${apiUrl}/api/users/${userId}/saved-items`);
+      const res = await axios.get(`${apiUrl}/api/my-saved-items`);
       setIsSaved(res.data.some(i => String(i.id) === String(itemId)));
     } catch (err) {
       setIsSaved(false);
@@ -129,10 +121,10 @@ const ItemDetailPage = () => {
       : 'http://localhost:5000';
     try {
       if (isSaved) {
-        await axios.delete(`${apiUrl}/api/users/${user.id}/saved-items/${itemId}`);
+        await axios.delete(`${apiUrl}/api/my-saved-items/${itemId}`);
         setIsSaved(false);
       } else {
-        await axios.post(`${apiUrl}/api/users/${user.id}/saved-items/${itemId}`);
+        await axios.post(`${apiUrl}/api/my-saved-items/${itemId}`);
         setIsSaved(true);
       }
     } catch (err) {

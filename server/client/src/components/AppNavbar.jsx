@@ -3,36 +3,43 @@ import { Container, Navbar, Nav, Button, Badge } from 'react-bootstrap';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { FaUniversity, FaUser, FaSignOutAlt } from 'react-icons/fa';
 import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
 
 const AppNavbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const user = JSON.parse(localStorage.getItem('user') || 'null');
+  const { user, logout, isAuthenticated, loading } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
-  const apiUrl = process.env.NODE_ENV === 'production'
-    ? 'https://dorm-deals-network-1e67636e46cd.herokuapp.com'
-    : 'http://localhost:5000';
 
   // Fetch unread messages count
   const fetchUnreadCount = async () => {
-    if (!user) return;
+    if (!user || !isAuthenticated) return;
     try {
-      const res = await axios.get(`${apiUrl}/api/users/${user.id}/unread-messages-count`);
+      const res = await axios.get('/api/my-unread-messages-count');
       setUnreadCount(res.data.count);
     } catch (err) {
       console.log('Error fetching unread count:', err);
+      // Try fallback endpoint
+      try {
+        const fallbackRes = await axios.get(`/api/users/${user.id}/unread-messages-count`);
+        setUnreadCount(fallbackRes.data.count);
+      } catch (fallbackErr) {
+        console.log('Fallback also failed:', fallbackErr);
+      }
     }
   };
 
   // Fetch unread count on mount and when location changes
   useEffect(() => {
-    fetchUnreadCount();
-  }, [user, location.pathname]);
+    if (!loading) {
+      fetchUnreadCount();
+    }
+  }, [user, isAuthenticated, location.pathname, loading]);
 
   // Refresh unread count when page becomes visible
   useEffect(() => {
     const handleVisibilityChange = () => {
-      if (!document.hidden) {
+      if (!document.hidden && isAuthenticated) {
         fetchUnreadCount();
       }
     };
@@ -41,10 +48,10 @@ const AppNavbar = () => {
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [user]);
+  }, [isAuthenticated]);
 
-  const handleLogout = () => {
-    localStorage.removeItem('user');
+  const handleLogout = async () => {
+    await logout();
     navigate('/');
   };
 
@@ -70,7 +77,7 @@ const AppNavbar = () => {
             <Nav.Link as={Link} to="/study-groups">Study Groups</Nav.Link>
           </Nav>
           <Nav>
-            {user ? (
+            {isAuthenticated && user ? (
               <>
                 <Nav.Link as={Link} to="/dashboard">
                   {user.name}'s Dashboard
@@ -87,7 +94,7 @@ const AppNavbar = () => {
                 </Button>
               </>
             ) : (
-              <Nav.Link as={Link} to="/login">Login</Nav.Link>
+              !loading && <Nav.Link as={Link} to="/login">Login</Nav.Link>
             )}
           </Nav>
         </Navbar.Collapse>

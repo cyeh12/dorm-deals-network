@@ -1,32 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
 import '../styles/MyListingsPage.css';
 
 const MyListingsPage = () => {
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [user, setUser] = useState(null);
   const navigate = useNavigate();
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
 
   useEffect(() => {
-    // Check if user is logged in
-    const userData = localStorage.getItem('user');
-    if (!userData) {
-      navigate('/login');
-      return;
+    if (!authLoading) {
+      if (!isAuthenticated) {
+        navigate('/login');
+        return;
+      }
+      fetchUserListings();
     }
+  }, [isAuthenticated, authLoading, navigate]);
 
-    const parsedUser = JSON.parse(userData);
-    setUser(parsedUser);
-    fetchUserListings(parsedUser.id);
-  }, [navigate]);
-
-  const fetchUserListings = async (userId) => {
+  const fetchUserListings = async () => {
     try {
-      console.log('[DEBUG] Fetching listings for user:', userId);
-      const response = await axios.get(`/api/users/${userId}/items`);
+      console.log('[DEBUG] Fetching listings for authenticated user');
+      const response = await axios.get('/api/my-items');
       console.log('[DEBUG] Fetched listings:', response.data);
       setListings(response.data);
     } catch (err) {

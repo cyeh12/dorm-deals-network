@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Form, Button, Alert } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
 
 const PostItemPage = () => {
   const navigate = useNavigate();
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -20,10 +22,24 @@ const PostItemPage = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  // Check if user is authenticated
-  const user = JSON.parse(localStorage.getItem('user') || 'null');
-  
-  if (!user) {
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      navigate('/login');
+    }
+  }, [isAuthenticated, authLoading, navigate]);
+
+  // Show loading while checking authentication
+  if (authLoading) {
+    return (
+      <Container className="py-5 text-center">
+        <div>Loading...</div>
+      </Container>
+    );
+  }
+
+  // Show login prompt if not authenticated
+  if (!isAuthenticated || !user) {
     return (
       <Container className="py-5 text-center">
         <Alert variant="warning">
@@ -136,10 +152,6 @@ const PostItemPage = () => {
 
     try {
       console.log('[DEBUG] Posting item:', formData);
-      
-      const apiUrl = process.env.NODE_ENV === 'production'
-        ? 'https://dorm-deals-network-1e67636e46cd.herokuapp.com/api/items'
-        : 'http://localhost:5000/api/items';
 
       // Create FormData for multipart/form-data
       const formDataToSend = new FormData();
@@ -150,14 +162,14 @@ const PostItemPage = () => {
       formDataToSend.append('condition', formData.condition);
       formDataToSend.append('contact_method', formData.contact_method);
       formDataToSend.append('contact_info', formData.contact_info);
-      formDataToSend.append('user_id', user.id);
+      // Note: user_id is now extracted from JWT token on the server
       
       // Add image if selected
       if (selectedImage) {
         formDataToSend.append('image', selectedImage);
       }
 
-      const res = await axios.post(apiUrl, formDataToSend, {
+      const res = await axios.post('/api/items', formDataToSend, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },

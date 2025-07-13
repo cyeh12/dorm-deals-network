@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Button, Badge, ListGroup, Spinner } from 'react-bootstrap';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { FaCamera, FaTrash } from 'react-icons/fa';
+import { useAuth } from '../context/AuthContext';
 
 const DashboardPage = () => {
-  const [user, setUser] = useState(null);
+  const { user: authUser, isAuthenticated, loading: authLoading, updateUser } = useAuth();
+  const navigate = useNavigate();
   const [userItems, setUserItems] = useState([]);
   const [recentItems, setRecentItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -17,22 +19,18 @@ const DashboardPage = () => {
   });
   const [uploading, setUploading] = useState(false);
   const [removing, setRemoving] = useState(false);
-  const apiUrl = process.env.NODE_ENV === 'production'
-    ? 'https://dorm-deals-network-1e67636e46cd.herokuapp.com'
-    : 'http://localhost:5000';
 
   useEffect(() => {
-    // Get user data from localStorage
-    const userData = localStorage.getItem('user');
-    if (userData) {
-      const parsedUser = JSON.parse(userData);
-      setUser(parsedUser);
-      fetchUserData(parsedUser.id);
-    } else {
-      // Redirect to login if no user data
-      window.location.href = '/login';
+    if (!authLoading) {
+      if (!isAuthenticated) {
+        navigate('/login');
+        return;
+      }
+      if (authUser) {
+        fetchUserData();
+      }
     }
-  }, []);
+  }, [isAuthenticated, authLoading, authUser, navigate]);
 
   // Helper to sum total views
   const getTotalViews = (items) => {
@@ -105,34 +103,43 @@ const DashboardPage = () => {
     };
   }, [user]);
 
-  const fetchUserData = async (userId) => {
+  const fetchUserData = async () => {
+    if (!authUser) return;
+    
     try {
-      // Fetch user's items
-      const userItemsRes = await axios.get(`${apiUrl}/api/users/${userId}/items`);
+      // Fetch user's items using protected endpoint
+      const userItemsRes = await axios.get('/api/my-items');
       setUserItems(userItemsRes.data);
 
-      // Fetch recent items from the marketplace
-      const allItemsRes = await axios.get(`${apiUrl}/api/items`);
+      // Fetch recent items from the marketplace (public endpoint)
+      const allItemsRes = await axios.get('/api/items');
       setRecentItems(allItemsRes.data.slice(0, 4)); // Get first 4 items
 
       // Fetch saved items count
       let savedItemsCount = 0;
       try {
-        const savedItemsRes = await axios.get(`${apiUrl}/api/users/${userId}/saved-items`);
+        const savedItemsRes = await axios.get(`/api/users/${authUser.id}/saved-items`);
         savedItemsCount = savedItemsRes.data.length;
       } catch (savedErr) {
         console.log('Error fetching saved items:', savedErr);
         savedItemsCount = 0;
       }
 
-      // Fetch unread messages count
+      // Fetch unread messages count using protected endpoint
       let unreadMessagesCount = 0;
       try {
-        const unreadMessagesRes = await axios.get(`${apiUrl}/api/users/${userId}/unread-messages-count`);
+        const unreadMessagesRes = await axios.get('/api/my-unread-messages-count');
         unreadMessagesCount = unreadMessagesRes.data.count;
       } catch (unreadErr) {
         console.log('Error fetching unread messages count:', unreadErr);
-        unreadMessagesCount = 0;
+        // Try fallback endpoint
+        try {
+          const fallbackRes = await axios.get(`/api/users/${authUser.id}/unread-messages-count`);
+          unreadMessagesCount = fallbackRes.data.count;
+        } catch (fallbackErr) {
+          console.log('Fallback also failed:', fallbackErr);
+          unreadMessagesCount = 0;
+        }
       }
 
       // Update stats
@@ -159,11 +166,10 @@ const DashboardPage = () => {
     const formData = new FormData();
     formData.append('image', file);
     try {
-      const res = await axios.post(`${apiUrl}/api/users/${user.id}/profile-image`, formData, {
+      const res = await axios.post(`${apiUrl}/api/my-profile-image`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       setUser((prev) => ({ ...prev, profile_image_url: res.data.profile_image_url }));
-      localStorage.setItem('user', JSON.stringify({ ...user, profile_image_url: res.data.profile_image_url }));
     } catch (err) {
       alert('Failed to upload image.');
     } finally {
@@ -176,9 +182,8 @@ const DashboardPage = () => {
     if (!window.confirm('Remove your profile picture?')) return;
     setRemoving(true);
     try {
-      await axios.delete(`${apiUrl}/api/users/${user.id}/profile-image`);
+      await axios.delete(`${apiUrl}/api/my-profile-image`);
       setUser((prev) => ({ ...prev, profile_image_url: null }));
-      localStorage.setItem('user', JSON.stringify({ ...user, profile_image_url: null }));
     } catch (err) {
       alert('Failed to remove image.');
     } finally {

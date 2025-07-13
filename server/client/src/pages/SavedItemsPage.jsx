@@ -3,12 +3,13 @@ import { Container, Row, Col, Card, Button, Spinner, Alert } from 'react-bootstr
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { FaArrowLeft, FaHeart } from 'react-icons/fa';
+import { useAuth } from '../context/AuthContext';
 
 const SavedItemsPage = () => {
   const [savedItems, setSavedItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const user = JSON.parse(localStorage.getItem('user'));
+  const { user } = useAuth();
   const apiUrl = process.env.NODE_ENV === 'production'
     ? 'https://dorm-deals-network-1e67636e46cd.herokuapp.com'
     : 'http://localhost:5000';
@@ -24,7 +25,7 @@ const SavedItemsPage = () => {
 
   const fetchSavedItems = async () => {
     try {
-      const res = await axios.get(`${apiUrl}/api/users/${user.id}/saved-items`);
+      const res = await axios.get(`${apiUrl}/api/my-saved-items`);
       setSavedItems(res.data);
     } catch (err) {
       setError('Failed to load saved items.');

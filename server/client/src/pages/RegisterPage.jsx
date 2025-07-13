@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Form, Button, Container, Row, Col, Card } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
 
 const RegisterPage = () => {
   const navigate = useNavigate();
+  const { register, isAuthenticated, loading: authLoading } = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -13,55 +14,54 @@ const RegisterPage = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated && !authLoading) {
+      navigate('/dashboard');
+    }
+  }, [isAuthenticated, authLoading, navigate]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     console.log('[DEBUG] Form submitted');
     setError('');
     setSuccess('');
+    
     if (password !== confirmPassword) {
       setError('Passwords do not match!');
       return;
     }
+    
     if (!/^[^@\s]+@[^@\s]+\.edu$/.test(email)) {
       setError('Please use a valid .edu student email address!');
       return;
     }
+    
     setLoading(true);
+    
     try {
-      console.log('[DEBUG] NODE_ENV:', process.env.NODE_ENV);
       console.log('[DEBUG] Sending registration data:', { name, email, password: '***' });
 
-      const apiUrl =
-        process.env.NODE_ENV === 'production'
-          ? 'https://dorm-deals-network-1e67636e46cd.herokuapp.com/api/register'
-          : 'http://localhost:5000/api/register';
+      const result = await register(name, email, password);
+      
+      if (result.success) {
+        console.log('[DEBUG] Registration successful:', result.user);
+        setSuccess('Registration successful! Please login with your credentials.');
+        setName('');
+        setEmail('');
+        setPassword('');
+        setConfirmPassword('');
 
-      console.log('[DEBUG] API URL:', apiUrl);
-
-      const res = await axios.post(apiUrl, {
-        name,
-        email,
-        password,
-      });
-
-      console.log('[DEBUG] Registration successful:', res.data);
-      setSuccess(res.data.message);
-      setName('');
-      setEmail('');
-      setPassword('');
-      setConfirmPassword('');
-
-      // Redirect to login page with success message
-      setTimeout(() => {
-        navigate('/login', { state: { successMessage: res.data.message } });
-      }, 2000); // Show success message for 2 seconds before redirecting
+        // Redirect to login page with success message
+        setTimeout(() => {
+          navigate('/login', { state: { successMessage: 'Registration successful! Please login with your credentials.' } });
+        }, 2000); // Show success message for 2 seconds before redirecting
+      } else {
+        setError(result.error);
+      }
     } catch (err) {
       console.error('[DEBUG] Registration error:', err);
-      console.error('[DEBUG] Error response:', err.response?.data);
-      console.error('[DEBUG] Error status:', err.response?.status);
-      setError(
-        err.response?.data?.message || 'Registration failed. Please try again.'
-      );
+      setError('Registration failed. Please try again.');
     } finally {
       setLoading(false);
       console.log('[DEBUG] Registration attempt completed');

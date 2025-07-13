@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
+import { AuthProvider } from './context/AuthContext';
 import AppNavbar from './components/AppNavbar';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
@@ -22,35 +23,37 @@ import './App.css';
 
 function App() {
   return (
-    <Router>
-      <div className="app-container">
-        <AppNavbar />
-        <div className="content-wrap">
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
-            <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/post-item" element={<PostItemPage />} />
-            <Route path="/browse" element={<BrowseItemsPage />} />
-            <Route path="/messages" element={<MessagingPage />} />
-            <Route path="/my-listings" element={<MyListingsPage />} />
-            <Route path="/edit-item/:itemId" element={<EditItemPage />} />
-            <Route path="/items/:itemId" element={<ItemDetailPage />} />
-            <Route path="/marketplace" element={<BrowseItemsPage />} />
-            <Route path="/study-groups" element={<StudyGroupsPage />} />
-            <Route path="/saved-items" element={<SavedItemsPage />} />
-            {/* <Route path="/marketplace" element={<MarketplacePage />} /> */}
-            {/* <Route path="/items/:id" element={<ItemDetailPage />} /> */}
-            {/* <Route path="/post-item" element={<PostItemPage />} /> */}
-            {/* <Route path="/study-groups" element={<StudyGroupsPage />} /> */}
-            {/* <Route path="/dashboard" element={<UserDashboardPage />} /> */}
-          </Routes>
-        </div>
-        <Footer />
+    <AuthProvider>
+      <Router>
+        <div className="app-container">
+          <AppNavbar />
+          <div className="content-wrap">
+            <Routes>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
+              <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/post-item" element={<PostItemPage />} />
+              <Route path="/browse" element={<BrowseItemsPage />} />
+              <Route path="/messages" element={<MessagingPage />} />
+              <Route path="/my-listings" element={<MyListingsPage />} />
+              <Route path="/edit-item/:itemId" element={<EditItemPage />} />
+              <Route path="/items/:itemId" element={<ItemDetailPage />} />
+              <Route path="/marketplace" element={<BrowseItemsPage />} />
+              <Route path="/study-groups" element={<StudyGroupsPage />} />
+              <Route path="/saved-items" element={<SavedItemsPage />} />
+              {/* <Route path="/marketplace" element={<MarketplacePage />} /> */}
+              {/* <Route path="/items/:id" element={<ItemDetailPage />} /> */}
+              {/* <Route path="/post-item" element={<PostItemPage />} /> */}
+              {/* <Route path="/study-groups" element={<StudyGroupsPage />} /> */}
+              {/* <Route path="/dashboard" element={<UserDashboardPage />} /> */}
+            </Routes>
+          </div>
+          <Footer />
         <ToastContainer position="bottom-right" />
       </div>
     </Router>
+    </AuthProvider>
   );
 }
 
