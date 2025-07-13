@@ -7,8 +7,14 @@ const { Pool } = require('pg');
 const multer = require('multer');
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const jwt = require('jsonwebtoken');
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// JWT configuration
+const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-this-in-production';
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '24h';
+const REFRESH_TOKEN_EXPIRES_IN = process.env.REFRESH_TOKEN_EXPIRES_IN || '7d';
 
 // Cloudinary configuration
 cloudinary.config({
@@ -42,6 +48,54 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
 });
+
+// JWT utility functions
+const generateTokens = (payload) => {
+  const accessToken = jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+  const refreshToken = jwt.sign(payload, JWT_SECRET, { expiresIn: REFRESH_TOKEN_EXPIRES_IN });
+  return { accessToken, refreshToken };
+};
+
+const verifyToken = (token) => {
+  try {
+    return jwt.verify(token, JWT_SECRET);
+  } catch (error) {
+    return null;
+  }
+};
+
+// JWT middleware for protected routes
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+
+  if (!token) {
+    return res.status(401).json({ message: 'Access token required' });
+  }
+
+  const decoded = verifyToken(token);
+  if (!decoded) {
+    return res.status(403).json({ message: 'Invalid or expired token' });
+  }
+
+  req.user = decoded;
+  next();
+};
+
+// Optional middleware for routes that can work with or without authentication
+const optionalAuth = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (token) {
+    const decoded = verifyToken(token);
+    if (decoded) {
+      req.user = decoded;
+    }
+  }
+
+  next();
+};
 
 // Add middleware
 app.use(cors());
@@ -187,16 +241,38 @@ app.post('/api/login', async (req, res) => {
     
     console.log('[DEBUG] Login successful for user:', user.name);
     
-    // Return user data (excluding password)
+    // Generate JWT tokens
+    const tokenPayload = {
+      userId: user.id,
+      email: user.email,
+      name: user.name,
+      university_id: user.university_id
+    };
+    
+    const { accessToken, refreshToken } = generateTokens(tokenPayload);
+    
+    // Store refresh token in database (optional - for token revocation)
+    try {
+      await pool.query(
+        'UPDATE users SET refresh_token = $1 WHERE id = $2',
+        [refreshToken, user.id]
+      );
+    } catch (tokenErr) {
+      console.log('[DEBUG] Could not store refresh token (table might not have column yet)');
+    }
+    
+    // Return user data with tokens
     res.status(200).json({
       message: 'Login successful',
+      accessToken,
+      refreshToken,
       user: {
         id: user.id,
         name: user.name,
         email: user.email,
         university: universityName,
         university_id: user.university_id,
-        profile_image_url: user.profile_image_url // Include profile image URL
+        profile_image_url: user.profile_image_url
       }
     });
   } catch (err) {
@@ -206,15 +282,123 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
+// API route: Verify token and get current user
+app.get('/api/verify-token', authenticateToken, async (req, res) => {
+  console.log('[DEBUG] Token verification request received');
+  
+  try {
+    // Get updated user data
+    const userResult = await pool.query('SELECT * FROM users WHERE id = $1', [req.user.userId]);
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    const user = userResult.rows[0];
+    
+    // Get university info
+    const uniResult = await pool.query('SELECT name FROM universities WHERE id = $1', [user.university_id]);
+    const universityName = uniResult.rows.length > 0 ? uniResult.rows[0].name : 'Unknown University';
+    
+    res.json({
+      valid: true,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        university: universityName,
+        university_id: user.university_id,
+        profile_image_url: user.profile_image_url
+      }
+    });
+  } catch (err) {
+    console.error('[DEBUG] Token verification error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// API route: Refresh token
+app.post('/api/refresh-token', async (req, res) => {
+  console.log('[DEBUG] Refresh token request received');
+  const { refreshToken } = req.body;
+  
+  if (!refreshToken) {
+    return res.status(401).json({ message: 'Refresh token required' });
+  }
+  
+  try {
+    // Verify refresh token
+    const decoded = verifyToken(refreshToken);
+    if (!decoded) {
+      return res.status(403).json({ message: 'Invalid refresh token' });
+    }
+    
+    // Check if user still exists and token matches
+    const userResult = await pool.query('SELECT * FROM users WHERE id = $1', [decoded.userId]);
+    if (userResult.rows.length === 0) {
+      return res.status(403).json({ message: 'User not found' });
+    }
+    
+    const user = userResult.rows[0];
+    
+    // Generate new tokens
+    const tokenPayload = {
+      userId: user.id,
+      email: user.email,
+      name: user.name,
+      university_id: user.university_id
+    };
+    
+    const { accessToken, refreshToken: newRefreshToken } = generateTokens(tokenPayload);
+    
+    // Update refresh token in database
+    try {
+      await pool.query(
+        'UPDATE users SET refresh_token = $1 WHERE id = $2',
+        [newRefreshToken, user.id]
+      );
+    } catch (tokenErr) {
+      console.log('[DEBUG] Could not update refresh token');
+    }
+    
+    res.json({
+      accessToken,
+      refreshToken: newRefreshToken
+    });
+  } catch (err) {
+    console.error('[DEBUG] Refresh token error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// API route: Logout
+app.post('/api/logout', authenticateToken, async (req, res) => {
+  console.log('[DEBUG] Logout request received');
+  
+  try {
+    // Clear refresh token from database
+    await pool.query(
+      'UPDATE users SET refresh_token = NULL WHERE id = $1',
+      [req.user.userId]
+    );
+    
+    res.json({ message: 'Logged out successfully' });
+  } catch (err) {
+    console.error('[DEBUG] Logout error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // API route: Post new item
-app.post('/api/items', upload.single('image'), async (req, res) => {
+app.post('/api/items', authenticateToken, upload.single('image'), async (req, res) => {
   console.log('[DEBUG] Post item request received');
   console.log('[DEBUG] Request body:', req.body);
+  console.log('[DEBUG] Authenticated user:', req.user);
   
-  const { title, description, category, price, condition, contact_method, contact_info, user_id } = req.body;
+  const { title, description, category, price, condition, contact_method, contact_info } = req.body;
+  const user_id = req.user.userId; // Get user_id from JWT token
   let imageUrl;
   
-  if (!title || !description || !category || !price || !condition || !user_id) {
+  if (!title || !description || !category || !price || !condition) {
     console.log('[DEBUG] Missing required fields');
     return res.status(400).json({ message: 'All required fields must be provided.' });
   }
@@ -325,6 +509,31 @@ app.get('/api/users/:userId/items', async (req, res) => {
     if (err.message.includes('relation "items" does not exist')) {
       console.log('[DEBUG] Items table does not exist yet');
       res.json([]); // Return empty array if table doesn't exist
+    } else {
+      res.status(500).json({ message: 'Server error.' });
+    }
+  }
+});
+
+// API route: Get current user's items (protected)
+app.get('/api/my-items', authenticateToken, async (req, res) => {
+  console.log('[DEBUG] Get my items request received');
+  const userId = req.user.userId;
+  
+  try {
+    console.log('[DEBUG] Fetching items for authenticated user:', userId);
+    const result = await pool.query(
+      'SELECT * FROM items WHERE user_id = $1 ORDER BY created_at DESC',
+      [userId]
+    );
+    
+    console.log('[DEBUG] Found', result.rows.length, 'items for user');
+    res.json(result.rows);
+  } catch (err) {
+    console.error('[DEBUG] Get my items error:', err);
+    if (err.message.includes('relation "items" does not exist')) {
+      console.log('[DEBUG] Items table does not exist yet');
+      res.json([]);
     } else {
       res.status(500).json({ message: 'Server error.' });
     }
@@ -450,18 +659,25 @@ app.get('/api/students', async (req, res) => {
 });
 
 // API route: Delete item
-app.delete('/api/items/:itemId', async (req, res) => {
+app.delete('/api/items/:itemId', authenticateToken, async (req, res) => {
   console.log('[DEBUG] Delete item request received');
   const { itemId } = req.params;
+  const userId = req.user.userId;
   
   try {
-    console.log('[DEBUG] Deleting item:', itemId);
+    console.log('[DEBUG] Deleting item:', itemId, 'by user:', userId);
     
-    // Check if item exists and get user_id for authorization
+    // Check if item exists and verify ownership
     const itemCheck = await pool.query('SELECT user_id FROM items WHERE id = $1', [itemId]);
     if (itemCheck.rows.length === 0) {
       console.log('[DEBUG] Item not found');
       return res.status(404).json({ message: 'Item not found.' });
+    }
+    
+    // Check if user owns the item
+    if (itemCheck.rows[0].user_id !== userId) {
+      console.log('[DEBUG] Unauthorized delete attempt');
+      return res.status(403).json({ message: 'You can only delete your own items.' });
     }
     
     // Delete the item
@@ -499,6 +715,21 @@ const ensureImageColumn = async () => {
 
 // Call the migration
 ensureImageColumn();
+
+// Database migration: Add refresh_token column to users table if it doesn't exist
+const ensureRefreshTokenColumn = async () => {
+  try {
+    await pool.query(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS refresh_token TEXT
+    `);
+    console.log('[DEBUG] Refresh token column ensured in users table');
+  } catch (err) {
+    console.log('[DEBUG] Error ensuring refresh token column (table might not exist yet):', err.message);
+  }
+};
+
+// Call the migration
+ensureRefreshTokenColumn();
 
 // Database migration: Add views column to items table if it doesn't exist
 const ensureViewsColumn = async () => {
@@ -558,11 +789,14 @@ const ensureMessagesTable = async () => {
 ensureMessagesTable();
 
 // API route: Send a message
-app.post('/api/messages', async (req, res) => {
-  const { sender_id, receiver_id, item_id, content } = req.body;
-  if (!sender_id || !receiver_id || !content) {
+app.post('/api/messages', authenticateToken, async (req, res) => {
+  const { receiver_id, item_id, content } = req.body;
+  const sender_id = req.user.userId; // Get sender from JWT token
+  
+  if (!receiver_id || !content) {
     return res.status(400).json({ message: 'Missing required fields.' });
   }
+  
   try {
     const result = await pool.query(
       `INSERT INTO messages (sender_id, receiver_id, item_id, content) VALUES ($1, $2, $3, $4) RETURNING *`,
@@ -576,8 +810,15 @@ app.post('/api/messages', async (req, res) => {
 });
 
 // API route: Get all conversations for a user (latest message per user pair)
-app.get('/api/users/:userId/conversations', async (req, res) => {
+app.get('/api/users/:userId/conversations', authenticateToken, async (req, res) => {
   const { userId } = req.params;
+  const authUserId = req.user.userId;
+  
+  // Check if user is accessing their own conversations
+  if (parseInt(userId) !== authUserId) {
+    return res.status(403).json({ message: 'You can only access your own conversations.' });
+  }
+  
   try {
     const result = await pool.query(`
       SELECT DISTINCT ON (other_user.id, m.item_id)
@@ -593,6 +834,29 @@ app.get('/api/users/:userId/conversations', async (req, res) => {
     res.json(result.rows);
   } catch (err) {
     console.error('[DEBUG] Get conversations error:', err);
+    res.status(500).json({ message: 'Error fetching conversations.' });
+  }
+});
+
+// API route: Get current user's conversations (protected)
+app.get('/api/my-conversations', authenticateToken, async (req, res) => {
+  const userId = req.user.userId;
+  
+  try {
+    const result = await pool.query(`
+      SELECT DISTINCT ON (other_user.id, m.item_id)
+        m.*, 
+        CASE WHEN m.sender_id = $1 THEN m.receiver_id ELSE m.sender_id END as other_user_id,
+        other_user.name as other_user_name,
+        other_user.profile_image_url as other_user_profile_image_url
+      FROM messages m
+      JOIN users other_user ON other_user.id = CASE WHEN m.sender_id = $1 THEN m.receiver_id ELSE m.sender_id END
+      WHERE m.sender_id = $1 OR m.receiver_id = $1
+      ORDER BY other_user.id, m.item_id, m.created_at DESC
+    `, [userId]);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('[DEBUG] Get my conversations error:', err);
     res.status(500).json({ message: 'Error fetching conversations.' });
   }
 });
@@ -620,8 +884,16 @@ app.get('/api/messages', async (req, res) => {
 });
 
 // API route: Get count of unread messages for a user
-app.get('/api/users/:userId/unread-messages-count', async (req, res) => {
+// API route: Get count of unread messages for a user
+app.get('/api/users/:userId/unread-messages-count', authenticateToken, async (req, res) => {
   const { userId } = req.params;
+  const authUserId = req.user.userId;
+  
+  // Check if user is accessing their own unread count
+  if (parseInt(userId) !== authUserId) {
+    return res.status(403).json({ message: 'You can only access your own unread messages count.' });
+  }
+  
   console.log(`[DEBUG] Fetching unread messages count for user ${userId}`);
   try {
     const result = await pool.query(
@@ -634,6 +906,25 @@ app.get('/api/users/:userId/unread-messages-count', async (req, res) => {
     res.json({ count });
   } catch (err) {
     console.error('[DEBUG] Get unread messages count error:', err);
+    res.status(500).json({ message: 'Error fetching unread messages count.' });
+  }
+});
+
+// API route: Get current user's unread messages count (protected)
+app.get('/api/my-unread-messages-count', authenticateToken, async (req, res) => {
+  const userId = req.user.userId;
+  
+  console.log(`[DEBUG] Fetching unread messages count for authenticated user ${userId}`);
+  try {
+    const result = await pool.query(
+      'SELECT COUNT(*) as count FROM messages WHERE receiver_id = $1 AND is_read = FALSE',
+      [userId]
+    );
+    const count = parseInt(result.rows[0].count);
+    console.log(`[DEBUG] Unread messages count for user ${userId}:`, count);
+    res.json({ count });
+  } catch (err) {
+    console.error('[DEBUG] Get my unread messages count error:', err);
     res.status(500).json({ message: 'Error fetching unread messages count.' });
   }
 });
@@ -660,9 +951,16 @@ app.post('/api/messages/mark-read', async (req, res) => {
 });
 
 // API route: Upload or update user profile image
-app.post('/api/users/:userId/profile-image', upload.single('image'), async (req, res) => {
+app.post('/api/users/:userId/profile-image', authenticateToken, upload.single('image'), async (req, res) => {
   console.log('[DEBUG] Profile image upload request received');
   const { userId } = req.params;
+  const authUserId = req.user.userId;
+  
+  // Check if user is updating their own profile
+  if (parseInt(userId) !== authUserId) {
+    return res.status(403).json({ message: 'You can only update your own profile image.' });
+  }
+  
   try {
     if (!req.file) {
       return res.status(400).json({ message: 'No image file provided.' });
@@ -678,9 +976,15 @@ app.post('/api/users/:userId/profile-image', upload.single('image'), async (req,
 });
 
 // API route: Remove user profile image
-app.delete('/api/users/:userId/profile-image', async (req, res) => {
+app.delete('/api/users/:userId/profile-image', authenticateToken, async (req, res) => {
   console.log('[DEBUG] Profile image removal request received');
   const { userId } = req.params;
+  const authUserId = req.user.userId;
+  
+  // Check if user is removing their own profile image
+  if (parseInt(userId) !== authUserId) {
+    return res.status(403).json({ message: 'You can only remove your own profile image.' });
+  }
   try {
     // Get current image publicId from Cloudinary URL if needed
     const userRes = await pool.query('SELECT profile_image_url FROM users WHERE id = $1', [userId]);
