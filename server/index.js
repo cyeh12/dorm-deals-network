@@ -932,6 +932,85 @@ app.get('/api/my-unread-messages-count', authenticateToken, async (req, res) => 
   }
 });
 
+// API route: Get user's saved items
+app.get('/api/my-saved-items', authenticateToken, async (req, res) => {
+  const userId = req.user.userId; // Get user_id from JWT token
+  
+  console.log(`[DEBUG] Fetching saved items for authenticated user ${userId}`);
+  try {
+    const result = await pool.query(`
+      SELECT i.id, i.title, i.description, i.price, i.image_url, i.item_type, 
+             i.created_at, u.name as seller_name, u.university
+      FROM items i
+      JOIN saved_items si ON i.id = si.item_id
+      JOIN users u ON i.seller_id = u.id
+      WHERE si.user_id = $1 AND i.status = 'available'
+      ORDER BY si.created_at DESC
+    `, [userId]);
+    
+    console.log(`[DEBUG] Found ${result.rows.length} saved items for user ${userId}`);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('[DEBUG] Get my saved items error:', err);
+    res.status(500).json({ message: 'Error fetching saved items.' });
+  }
+});
+
+// API route: Save/unsave an item
+app.post('/api/items/:itemId/save', authenticateToken, async (req, res) => {
+  const { itemId } = req.params;
+  const userId = req.user.userId; // Get user_id from JWT token
+  
+  console.log(`[DEBUG] Toggle save for item ${itemId} by user ${userId}`);
+  try {
+    // Check if item is already saved
+    const existingResult = await pool.query(
+      'SELECT id FROM saved_items WHERE user_id = $1 AND item_id = $2',
+      [userId, itemId]
+    );
+    
+    if (existingResult.rows.length > 0) {
+      // Unsave the item
+      await pool.query(
+        'DELETE FROM saved_items WHERE user_id = $1 AND item_id = $2',
+        [userId, itemId]
+      );
+      console.log(`[DEBUG] Item ${itemId} unsaved by user ${userId}`);
+      res.json({ saved: false, message: 'Item removed from saved items.' });
+    } else {
+      // Save the item
+      await pool.query(
+        'INSERT INTO saved_items (user_id, item_id) VALUES ($1, $2)',
+        [userId, itemId]
+      );
+      console.log(`[DEBUG] Item ${itemId} saved by user ${userId}`);
+      res.json({ saved: true, message: 'Item added to saved items.' });
+    }
+  } catch (err) {
+    console.error('[DEBUG] Toggle save item error:', err);
+    res.status(500).json({ message: 'Error updating saved items.' });
+  }
+});
+
+// API route: Check if item is saved
+app.get('/api/items/:itemId/saved', authenticateToken, async (req, res) => {
+  const { itemId } = req.params;
+  const userId = req.user.userId; // Get user_id from JWT token
+  
+  try {
+    const result = await pool.query(
+      'SELECT id FROM saved_items WHERE user_id = $1 AND item_id = $2',
+      [userId, itemId]
+    );
+    
+    const isSaved = result.rows.length > 0;
+    res.json({ saved: isSaved });
+  } catch (err) {
+    console.error('[DEBUG] Check saved item error:', err);
+    res.status(500).json({ message: 'Error checking saved status.' });
+  }
+});
+
 // API route: Mark messages as read
 app.post('/api/messages/mark-read', authenticateToken, async (req, res) => {
   const { other_user_id, item_id } = req.body;
