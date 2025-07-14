@@ -939,12 +939,13 @@ app.get('/api/my-saved-items', authenticateToken, async (req, res) => {
   console.log(`[DEBUG] Fetching saved items for authenticated user ${userId}`);
   try {
     const result = await pool.query(`
-      SELECT i.id, i.title, i.description, i.price, i.image_url, i.item_type, 
-             i.created_at, u.name as seller_name, u.university
+      SELECT i.id, i.title, i.description, i.price, i.image_url, i.category, 
+             i.created_at, u.name as seller_name, uni.name as university_name
       FROM items i
       JOIN saved_items si ON i.id = si.item_id
-      JOIN users u ON i.seller_id = u.id
-      WHERE si.user_id = $1 AND i.status = 'available'
+      JOIN users u ON i.user_id = u.id
+      LEFT JOIN universities uni ON u.university_id = uni.id
+      WHERE si.user_id = $1 AND i.status = 'active'
       ORDER BY si.created_at DESC
     `, [userId]);
     
