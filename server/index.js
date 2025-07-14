@@ -862,11 +862,14 @@ app.get('/api/my-conversations', authenticateToken, async (req, res) => {
 });
 
 // API route: Get all messages between two users (optionally for an item)
-app.get('/api/messages', async (req, res) => {
-  const { user1, user2, item_id } = req.query;
-  if (!user1 || !user2) {
-    return res.status(400).json({ message: 'Missing user ids.' });
+app.get('/api/messages', authenticateToken, async (req, res) => {
+  const { user2, item_id } = req.query;
+  const user1 = req.user.userId; // Get user1 from JWT token
+  
+  if (!user2) {
+    return res.status(400).json({ message: 'Missing user2 parameter.' });
   }
+  
   try {
     let query = `SELECT * FROM messages WHERE ((sender_id = $1 AND receiver_id = $2) OR (sender_id = $2 AND receiver_id = $1))`;
     let params = [user1, user2];
@@ -930,11 +933,14 @@ app.get('/api/my-unread-messages-count', authenticateToken, async (req, res) => 
 });
 
 // API route: Mark messages as read
-app.post('/api/messages/mark-read', async (req, res) => {
-  const { user_id, other_user_id, item_id } = req.body;
-  if (!user_id || !other_user_id) {
-    return res.status(400).json({ message: 'Missing user ids.' });
+app.post('/api/messages/mark-read', authenticateToken, async (req, res) => {
+  const { other_user_id, item_id } = req.body;
+  const user_id = req.user.userId; // Get user_id from JWT token
+  
+  if (!other_user_id) {
+    return res.status(400).json({ message: 'Missing other_user_id.' });
   }
+  
   try {
     let query = `UPDATE messages SET is_read = TRUE WHERE receiver_id = $1 AND sender_id = $2`;
     let params = [user_id, other_user_id];
