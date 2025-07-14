@@ -20,6 +20,10 @@ const DashboardPage = () => {
   const [uploading, setUploading] = useState(false);
   const [removing, setRemoving] = useState(false);
 
+  const apiUrl = process.env.NODE_ENV === 'production'
+    ? 'https://dorm-deals-network-1e67636e46cd.herokuapp.com'
+    : 'http://localhost:5000';
+
   useEffect(() => {
     if (!authLoading) {
       if (!isAuthenticated) {
@@ -50,48 +54,10 @@ const DashboardPage = () => {
     }
   };
 
-  // Function to refresh just the stats without refetching all data
-  const refreshStats = async (userId) => {
-    try {
-      // Fetch user's items for active listings and total views
-      const userItemsRes = await axios.get(`${apiUrl}/api/users/${userId}/items`);
-      
-      // Fetch saved items count
-      let savedItemsCount = 0;
-      try {
-        const savedItemsRes = await axios.get(`${apiUrl}/api/users/${userId}/saved-items`);
-        savedItemsCount = savedItemsRes.data.length;
-      } catch (savedErr) {
-        console.log('Error fetching saved items:', savedErr);
-        savedItemsCount = 0;
-      }
-
-      // Fetch unread messages count
-      let unreadMessagesCount = 0;
-      try {
-        const unreadMessagesRes = await axios.get(`${apiUrl}/api/users/${userId}/unread-messages-count`);
-        unreadMessagesCount = unreadMessagesRes.data.count;
-      } catch (unreadErr) {
-        console.log('Error fetching unread messages count:', unreadErr);
-        unreadMessagesCount = 0;
-      }
-
-      // Update stats
-      setStats({
-        activeListings: userItemsRes.data.filter(item => item.status === 'active').length,
-        totalViews: getTotalViews(userItemsRes.data),
-        savedItems: savedItemsCount,
-        newMessages: unreadMessagesCount
-      });
-    } catch (err) {
-      console.error('Error refreshing stats:', err);
-    }
-  };
-
   // Add event listener for when user returns to the page
   useEffect(() => {
     const handleVisibilityChange = () => {
-      if (!document.hidden && user) {
+      if (!document.hidden && authUser) {
         // Page became visible, refresh stats
         fetchUserData();
       }
@@ -101,7 +67,7 @@ const DashboardPage = () => {
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [user]);
+  }, [authUser]);
 
   const fetchUserData = async () => {
     if (!authUser) return;
@@ -162,7 +128,7 @@ const DashboardPage = () => {
       const res = await axios.post(`${apiUrl}/api/my-profile-image`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      setUser((prev) => ({ ...prev, profile_image_url: res.data.profile_image_url }));
+      updateUser({ profile_image_url: res.data.profile_image_url });
     } catch (err) {
       alert('Failed to upload image.');
     } finally {
@@ -176,7 +142,7 @@ const DashboardPage = () => {
     setRemoving(true);
     try {
       await axios.delete(`${apiUrl}/api/my-profile-image`);
-      setUser((prev) => ({ ...prev, profile_image_url: null }));
+      updateUser({ profile_image_url: null });
     } catch (err) {
       alert('Failed to remove image.');
     } finally {
@@ -192,7 +158,7 @@ const DashboardPage = () => {
     );
   }
 
-  if (!user) {
+  if (!authUser) {
     return (
       <Container className="d-flex justify-content-center align-items-center min-vh-100">
         <div>Loading...</div>
@@ -207,7 +173,7 @@ const DashboardPage = () => {
         <Col xs="auto">
           <div style={{ position: 'relative', width: 96, height: 96 }}>
             <img
-              src={user.profile_image_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(user.name)}
+              src={authUser.profile_image_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(authUser.name)}
               alt="Profile"
               style={{ width: 96, height: 96, borderRadius: '50%', objectFit: 'cover', border: '2px solid #007bff' }}
             />
@@ -222,7 +188,7 @@ const DashboardPage = () => {
                 disabled={uploading}
               />
             </label>
-            {user.profile_image_url && (
+            {authUser.profile_image_url && (
               <Button
                 variant="danger"
                 size="sm"
@@ -242,8 +208,8 @@ const DashboardPage = () => {
           </div>
         </Col>
         <Col>
-          <h1 className="mb-1">Welcome back, {user.name}! 🎓</h1>
-          <p className="text-muted">{user.university}</p>
+          <h1 className="mb-1">Welcome back, {authUser.name}! 🎓</h1>
+          <p className="text-muted">{authUser.university}</p>
         </Col>
       </Row>
 
