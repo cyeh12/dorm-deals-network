@@ -41,8 +41,8 @@ const ItemDetailPage = () => {
         ? 'https://dorm-deals-network-1e67636e46cd.herokuapp.com'
         : 'http://localhost:5000';
       let url = `${apiUrl}/api/items/${itemId}`;
-      if (currentUser && currentUser.id) {
-        url += `?viewerId=${currentUser.id}`;
+      if (user && user.id) {
+        url += `?viewerId=${user.id}`;
       }
       const response = await axios.get(url);
       
@@ -106,8 +106,8 @@ const ItemDetailPage = () => {
       const apiUrl = process.env.NODE_ENV === 'production'
         ? 'https://dorm-deals-network-1e67636e46cd.herokuapp.com'
         : 'http://localhost:5000';
-      const res = await axios.get(`${apiUrl}/api/my-saved-items`);
-      setIsSaved(res.data.some(i => String(i.id) === String(itemId)));
+      const res = await axios.get(`${apiUrl}/api/items/${itemId}/saved`);
+      setIsSaved(res.data.saved);
     } catch (err) {
       setIsSaved(false);
     }
@@ -120,13 +120,8 @@ const ItemDetailPage = () => {
       ? 'https://dorm-deals-network-1e67636e46cd.herokuapp.com'
       : 'http://localhost:5000';
     try {
-      if (isSaved) {
-        await axios.delete(`${apiUrl}/api/my-saved-items/${itemId}`);
-        setIsSaved(false);
-      } else {
-        await axios.post(`${apiUrl}/api/my-saved-items/${itemId}`);
-        setIsSaved(true);
-      }
+      const response = await axios.post(`${apiUrl}/api/items/${itemId}/save`);
+      setIsSaved(response.data.saved);
     } catch (err) {
       alert('Failed to update saved status.');
     } finally {
