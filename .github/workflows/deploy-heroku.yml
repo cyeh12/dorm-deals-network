@@ -19,29 +19,22 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install dependencies
+      - name: Install dependencies (server)
+        run: |
+          cd server && npm ci
+
+      - name: Install dependencies (client)
         run: |
           cd server/client && npm ci
-          cd ../.. && npm ci
 
       # Optional: run tests here if you have them
       # - name: Run tests
       #   run: npm test
 
-      - name: Install Heroku CLI
-        run: |
-          curl https://cli-assets.heroku.com/install.sh | sh
-          echo 'export PATH="/usr/local/lib/heroku/bin:$PATH"' >> $GITHUB_ENV
-
       - name: Deploy to Heroku
-        env:
-          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
-          HEROKU_APP_NAME: ${{ secrets.HEROKU_APP_NAME }}
-          HEROKU_EMAIL: ${{ secrets.HEROKU_EMAIL }}
-        run: |
-          echo "$HEROKU_API_KEY" | /usr/local/lib/heroku/bin/heroku auth:token
-          /usr/local/lib/heroku/bin/heroku git:remote -a "$HEROKU_APP_NAME"
-          git config --global user.email "$HEROKU_EMAIL"
-          git config --global user.name "GitHub Actions"
-          git fetch --all --unshallow || true
-          git push https://heroku:$HEROKU_API_KEY@git.heroku.com/$HEROKU_APP_NAME.git HEAD:main --force
+        uses: akhileshns/heroku-deploy@v3.12.14
+        with:
+          heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
+          heroku_app_name: ${{ secrets.HEROKU_APP_NAME }}
+          heroku_email: ${{ secrets.HEROKU_EMAIL }}
+          usedocker: false
