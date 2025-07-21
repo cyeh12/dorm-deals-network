@@ -701,6 +701,138 @@ app.delete('/api/items/:itemId', authenticateToken, async (req, res) => {
   }
 });
 
+// ============================================
+// DATABASE INITIALIZATION AND MIGRATIONS
+// ============================================
+
+// Database initialization: Create base tables if they don't exist
+const initializeBaseTables = async () => {
+  try {
+    // Create universities table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS universities (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        domain VARCHAR(100) NOT NULL UNIQUE,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    console.log('[DEBUG] Universities table ensured');
+
+    // Create users table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        email VARCHAR(255) NOT NULL UNIQUE,
+        password VARCHAR(255) NOT NULL,
+        university_id INTEGER REFERENCES universities(id),
+        profile_image_url VARCHAR(255),
+        refresh_token TEXT,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    console.log('[DEBUG] Users table ensured');
+
+    // Seed universities if table is empty
+    const uniCount = await pool.query('SELECT COUNT(*) as count FROM universities');
+    if (parseInt(uniCount.rows[0].count) === 0) {
+      await seedUniversities();
+    }
+
+  } catch (err) {
+    console.error('[DEBUG] Error initializing base tables:', err.message);
+  }
+};
+
+// Seed universities with common US universities
+const seedUniversities = async () => {
+  try {
+    const universities = [
+      // Ivy League
+      { name: 'Harvard University', domain: 'harvard.edu' },
+      { name: 'Yale University', domain: 'yale.edu' },
+      { name: 'Princeton University', domain: 'princeton.edu' },
+      { name: 'Columbia University', domain: 'columbia.edu' },
+      { name: 'University of Pennsylvania', domain: 'upenn.edu' },
+      { name: 'Dartmouth College', domain: 'dartmouth.edu' },
+      { name: 'Brown University', domain: 'brown.edu' },
+      { name: 'Cornell University', domain: 'cornell.edu' },
+      
+      // Top Tech Universities
+      { name: 'Massachusetts Institute of Technology', domain: 'mit.edu' },
+      { name: 'Stanford University', domain: 'stanford.edu' },
+      { name: 'California Institute of Technology', domain: 'caltech.edu' },
+      { name: 'Carnegie Mellon University', domain: 'cmu.edu' },
+      { name: 'Georgia Institute of Technology', domain: 'gatech.edu' },
+      
+      // Major State Universities
+      { name: 'University of California, Berkeley', domain: 'berkeley.edu' },
+      { name: 'University of California, Los Angeles', domain: 'ucla.edu' },
+      { name: 'University of California, San Diego', domain: 'ucsd.edu' },
+      { name: 'University of Michigan', domain: 'umich.edu' },
+      { name: 'University of Illinois Urbana-Champaign', domain: 'illinois.edu' },
+      { name: 'University of Washington', domain: 'uw.edu' },
+      { name: 'University of Texas at Austin', domain: 'utexas.edu' },
+      { name: 'University of Wisconsin-Madison', domain: 'wisc.edu' },
+      { name: 'Pennsylvania State University', domain: 'psu.edu' },
+      { name: 'Ohio State University', domain: 'osu.edu' },
+      { name: 'University of Florida', domain: 'ufl.edu' },
+      { name: 'University of Georgia', domain: 'uga.edu' },
+      { name: 'University of North Carolina at Chapel Hill', domain: 'unc.edu' },
+      { name: 'University of Virginia', domain: 'virginia.edu' },
+      
+      // Other Notable Universities
+      { name: 'Duke University', domain: 'duke.edu' },
+      { name: 'Northwestern University', domain: 'northwestern.edu' },
+      { name: 'University of Chicago', domain: 'uchicago.edu' },
+      { name: 'Vanderbilt University', domain: 'vanderbilt.edu' },
+      { name: 'Rice University', domain: 'rice.edu' },
+      { name: 'Johns Hopkins University', domain: 'jhu.edu' },
+      { name: 'Washington University in St. Louis', domain: 'wustl.edu' },
+      { name: 'University of Notre Dame', domain: 'nd.edu' },
+      { name: 'Georgetown University', domain: 'georgetown.edu' },
+      { name: 'University of Southern California', domain: 'usc.edu' },
+      { name: 'New York University', domain: 'nyu.edu' },
+      { name: 'Boston University', domain: 'bu.edu' },
+      { name: 'Northeastern University', domain: 'northeastern.edu' },
+      
+      // California State Universities
+      { name: 'San Diego State University', domain: 'sdsu.edu' },
+      { name: 'California State University, Long Beach', domain: 'csulb.edu' },
+      { name: 'San Francisco State University', domain: 'sfsu.edu' },
+      { name: 'California State University, Fullerton', domain: 'fullerton.edu' },
+      
+      // Additional Major Universities
+      { name: 'Arizona State University', domain: 'asu.edu' },
+      { name: 'University of Arizona', domain: 'arizona.edu' },
+      { name: 'University of Colorado Boulder', domain: 'colorado.edu' },
+      { name: 'University of Oregon', domain: 'uoregon.edu' },
+      { name: 'Oregon State University', domain: 'oregonstate.edu' },
+      { name: 'University of Utah', domain: 'utah.edu' },
+      { name: 'University of Nevada, Las Vegas', domain: 'unlv.edu' },
+      
+      // Add a test university for development
+      { name: 'Test University', domain: 'test.edu' }
+    ];
+
+    for (const uni of universities) {
+      await pool.query(
+        'INSERT INTO universities (name, domain) VALUES ($1, $2) ON CONFLICT (domain) DO NOTHING',
+        [uni.name, uni.domain]
+      );
+    }
+    
+    console.log(`[DEBUG] Seeded ${universities.length} universities`);
+  } catch (err) {
+    console.error('[DEBUG] Error seeding universities:', err.message);
+  }
+};
+
+// Call base table initialization first
+initializeBaseTables();
+
 // Database migration: Add image_url column to items table if it doesn't exist
 const ensureImageColumn = async () => {
   try {
